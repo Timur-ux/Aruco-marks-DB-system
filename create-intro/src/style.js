@@ -12,7 +12,6 @@ const style = {
     marginRight: "auto",
     width: "fit-content",
     textAligment: "center",
-    border: "1px solid black"
   },
 
   textCentered: {
@@ -21,7 +20,10 @@ const style = {
 
   mainForm: {
     marginTop: "10%",
-    padding: "5%"
+    padding: "calc(5% + 5px)",
+    border: "2px solid black",
+    borderRadius: "10px",
+    backgroundColor: "#DDDDDD",
   },
 
   mainBlock: {
@@ -41,11 +43,17 @@ const style = {
   },
 
   logInDataField: {
-    margin: "10px",
+    margin: "5px",
+    marginBottom: "20px",
     padding: "3px",
-    width: "80%",
+    width: "100%",
+    fontSize: "24pt",
     border: "1px solid gray",
-    backgroundColor: "#EEEEEE"
+    backgroundColor: "#777777"
+  },
+
+  borderedBlock: {
+    border: "1px solid gray"
   }
 }
 

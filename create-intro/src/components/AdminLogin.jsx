@@ -4,31 +4,21 @@ import ProfileData from "./ProfileData";
 import TextField from "./TextField";
 
 const AdminLogin = () => {
-  const [ login, setLogin] = useState("");
-  const [ password, setPassword] = useState("");
-
-  const onLoginChange = (event) => {
-    setLogin(event.target.value);
-  }
-
-  const onPasswordChange = (event) => 
-    setPassword(event.target.value);
-
-  const onLoginBlur = () => {
-    console.log("Inputted login: ", login);
-  }
-  
-  const onPasswordBlur = () => {
-    console.log("Inputted password: ", password);
+  const onSendClick = () => {
+    console.log("clicked");
   }
 
   return (
   <div style={style.mainBlock}>
     <ProfileData profileName="Администратор"/>
+
     <div style={{...style.centered, ...style.mainForm}}>
-      <p><h3>Авторизация</h3></p>
-      <TextField label="Login" fieldStyle={style.logInDataField} />
-      <TextField label="Password" fieldStyle={style.logInDataField} />
+      <h3 style={style.centeredWidth}>Авторизация</h3>
+      <TextField label="Login" fieldStyle={style.logInDataField}/>
+      <TextField label="Password" type="password" fieldStyle={style.logInDataField} />
+      <div style = {{...style.justifiedContent, ...style.centeredWidth}}>
+          <button style={style.mainForm} onClick={onSendClick}>Отправить</button>
+      </div>
     </div>
   </div>
   )
