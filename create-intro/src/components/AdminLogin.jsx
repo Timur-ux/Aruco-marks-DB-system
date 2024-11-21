@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import style from "../style";
 import ProfileData from "./ProfileData";
+import TextField from "./TextField";
 
 const AdminLogin = () => {
   const [ login, setLogin] = useState("");
@@ -26,8 +27,8 @@ const AdminLogin = () => {
     <ProfileData profileName="Администратор"/>
     <div style={{...style.centered, ...style.mainForm}}>
       <p><h3>Авторизация</h3></p>
-      <input style={style.logInDataField} type="text" onChange={onLoginChange} onBlur={onLoginBlur}></input>
-      <input style={style.logInDataField} type="text" onChange={onPasswordChange} onBlur={onPasswordBlur}></input>
+      <TextField label="Login" fieldStyle={style.logInDataField} />
+      <TextField label="Password" fieldStyle={style.logInDataField} />
     </div>
   </div>
   )

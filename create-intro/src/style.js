@@ -41,6 +41,8 @@ const style = {
   },
 
   logInDataField: {
+    margin: "10px",
+    padding: "3px",
     width: "80%",
     border: "1px solid gray",
     backgroundColor: "#EEEEEE"
