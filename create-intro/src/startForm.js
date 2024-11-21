@@ -10,6 +10,11 @@ const StartForm = () => {
     navigate("/user");
   };
 
+  const onRedactorClick = (event) => {
+    console.log("Redactor clicked");
+    navigate("/redactor");
+  };
+
   const onAdminClick = (event) => {
     console.log("Admin clicked");
     navigate("/admin");
@@ -24,11 +29,14 @@ const StartForm = () => {
       }}
     >
       <p>
-        Добро пожаловать в сервис отслеживания Aruco меток <br />
-        Выберите профиль:
+        <h3>
+          Добро пожаловать в сервис отслеживания Aruco меток <br />
+          Выберите профиль:
+        </h3>
       </p>
       <div style={style.justifiedContent}>
         <button style={style.mainForm} onClick={onUserClick}>Пользователь</button>
+        <button style={style.mainForm} onClick={onRedactorClick}>Редактор</button>
         <button style={style.mainForm} onClick={onAdminClick}>Администратор</button>
       </div>
     </div>

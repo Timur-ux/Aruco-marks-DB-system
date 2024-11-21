@@ -4,6 +4,7 @@ import StartForm from "./startForm";
 import { BrowserRouter as Router, Routes, Route} from "react-router-dom";
 import UserPage from "./components/UserPage";
 import AdminLogin from "./components/AdminLogin";
+import RedactorLogin from "./components/RedactorLogin.jsx"
 
 const App = () => {
   return (
@@ -13,6 +14,7 @@ const App = () => {
         <Route path="/" element={<StartForm/>} />
         <Route path="/user" element={<UserPage />} />
         <Route path="/admin" element={<AdminLogin />} />
+        <Route path="/redactor" element={<RedactorLogin />} />
       </Routes>
     </Router>
     </div>

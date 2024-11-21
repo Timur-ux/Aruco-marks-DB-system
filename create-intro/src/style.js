@@ -26,12 +26,24 @@ const style = {
 
   mainBlock: {
     width: "100%",
-    height: 1000,
+    height: "100vh",
   },
 
   justifiedContent: {
     display: "flex",
     justifyContent: "space-between",
+  },
+
+  profileData: {
+    width: "90vw",
+    padding: "1vmin",
+    textAlign: "right",
+  },
+
+  logInDataField: {
+    width: "80%",
+    border: "1px solid gray",
+    backgroundColor: "#EEEEEE"
   }
 }
 
