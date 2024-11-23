@@ -1,13 +1,40 @@
 services:
   nginx:
     image: nginx
+    # environment:
+    #   - VIRTUAL_HOST=site.local
     ports:
       - 8080:80
     volumes:
       - ./create-intro/build/://usr/share/nginx/html
+    networks:
+      - frontend
 
   flaskbackend:
     build:
       context: ./backend/
+    # environment:
+    #   - VIRTUAL_HOST=api.local
     ports:
       - 5000:5000
+    networks:
+      - frontend
+      - backend
+
+  postgres:
+    image: postgres:13.3
+    environment:
+      POSTGRES_DB: "ArucoService"
+      POSTGRES_USER: "Raison"
+      POSTGRES_PASSWORD: "qwerty"
+    networks:
+        - backend
+
+
+networks:
+  frontend:
+    driver: bridge
+    # external:
+      # name: proxy_proxy
+  backend:
+    driver: bridge

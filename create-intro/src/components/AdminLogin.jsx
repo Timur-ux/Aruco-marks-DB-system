@@ -1,11 +1,26 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import style from "../style";
 import ProfileData from "./ProfileData";
 import TextField from "./TextField";
+import axios from "axios";
+import addresses from "../addresses";
+
+const client = axios.create({
+  baseURL: addresses.backend
+});
 
 const AdminLogin = () => {
   const onSendClick = () => {
-    console.log("clicked");
+    console.log('clicked');
+    const uri = '/api/login';
+    (
+      async () => {
+      await client({method: "GET", url: uri})
+        .then((response) => {console.log(response.data)})
+        .catch((error) => {console.log(error)});
+      }
+    )()
+    console.log('clicked2');
   }
 
   return (
