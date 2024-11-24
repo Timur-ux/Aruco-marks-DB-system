@@ -1,8 +1,6 @@
 services:
   nginx:
     image: nginx
-    # environment:
-    #   - VIRTUAL_HOST=site.local
     ports:
       - 8080:80
     volumes:
@@ -13,8 +11,6 @@ services:
   flaskbackend:
     build:
       context: ./backend/
-    # environment:
-    #   - VIRTUAL_HOST=api.local
     ports:
       - 5000:5000
     networks:
@@ -27,14 +23,16 @@ services:
       POSTGRES_DB: "ArucoService"
       POSTGRES_USER: "Raison"
       POSTGRES_PASSWORD: "qwerty"
+      PGDATA: "/var/lib/postgresql/data/pgdata"
     networks:
         - backend
+    volumes:
+      - ./db/:/docker-entrypoint-initdb.d
+      - ./db/storage/:/var/lib/postgresql/data/pgdata
 
 
 networks:
   frontend:
     driver: bridge
-    # external:
-      # name: proxy_proxy
   backend:
     driver: bridge
