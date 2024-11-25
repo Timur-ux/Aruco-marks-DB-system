@@ -46,7 +46,7 @@ create table  users (
   id bigserial primary key,
   access_level bigint not null,
   login varchar(100),
-  password varchar(256)
+  password varchar(64)
 );
 
 create table  access (
