@@ -10,7 +10,7 @@ WORKDIR /code
 
 COPY --from=builder /root/.local /root/.local
 
-COPY ./app.py .
+COPY . .
 
 ENV PATH=/root/.local:$PATH
 

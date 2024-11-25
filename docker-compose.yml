@@ -1,10 +1,12 @@
 services:
   nginx:
-    image: nginx
+    # image: nginx
+    build:
+      context: ./frontend/
     ports:
       - 8080:80
-    volumes:
-      - ./create-intro/build/://usr/share/nginx/html
+    # volumes:
+    #   - ./create-intro/build/://usr/share/nginx/html
     networks:
       - frontend
 

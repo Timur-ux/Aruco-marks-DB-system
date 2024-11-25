@@ -1,7 +1,14 @@
 #!flask/bin/python
 import flask
-from flask import jsonify
+from flask import jsonify, request
 from flask_cors import CORS, cross_origin
+
+import src.db.sessionManager as sm
+from src.db.requests import processAuth
+from src.core.config import DB_CONFIG
+
+
+sessionManager = sm.SessionManager(DB_CONFIG)
 
 app = flask.Flask(__name__);
 cors = CORS(app)
@@ -17,7 +24,11 @@ def index():
 @app.route('/api/login', methods=["GET"])
 @cross_origin()
 def auth():
-    response = jsonify({"data" :  "auth result"})
+    login = request.args.get('login')
+    password = request.args.get('password')
+    data = processAuth(sessionManager, login, password)
+    response = jsonify({"data" :  data, 'login' : login, "password" : password})
+
     return response
 
 @app.route('/api/marks', methods=["GET"])
