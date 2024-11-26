@@ -2,9 +2,8 @@ import "./App.css";
 import style from "./style.js";
 import StartForm from "./startForm";
 import { BrowserRouter as Router, Routes, Route} from "react-router-dom";
-import UserPage from "./components/UserPage";
-import AdminLogin from "./components/AdminLogin";
-import RedactorLogin from "./components/RedactorLogin.jsx"
+import AuthForm from "./components/AuthForm";
+import { administratorAuth, redactorAuth, userAuth } from "./authFunc";
 
 const App = () => {
   return (
@@ -12,9 +11,9 @@ const App = () => {
     <Router>
       <Routes>
         <Route path="/" element={<StartForm/>} />
-        <Route path="/user" element={<UserPage />} />
-        <Route path="/admin" element={<AdminLogin />} />
-        <Route path="/redactor" element={<RedactorLogin />} />
+        <Route path="/user" element={<AuthForm profileName={"User"} processAuth={userAuth} />} />
+        <Route path="/redactor" element={<AuthForm profileName={"Redactor"} processAuth={redactorAuth} />} />
+        <Route path="/admin" element={<AuthForm profileName={"Administrator"} processAuth={administratorAuth} />} />
       </Routes>
     </Router>
     </div>

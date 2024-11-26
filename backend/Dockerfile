@@ -1,17 +1,21 @@
 FROM python:3.8 AS builder
 
-COPY ./requirements.txt .
+RUN python -m venv /venv;
 
-RUN pip install --user -r requirements.txt 
+WORKDIR /code
+
+COPY ./requirements.txt  .
+
+RUN /venv/bin/pip install --no-cache-dir --upgrade -r requirements.txt
 
 FROM python:3.8-slim
 
 WORKDIR /code
 
-COPY --from=builder /root/.local /root/.local
+COPY --from=builder /venv/ /venv/ 
+
+ENV PATH=/venv/bin:$PATH
 
 COPY . .
 
-ENV PATH=/root/.local:$PATH
-
-CMD ["python", "./app.py", "--host=0.0.0.0"]
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0"]

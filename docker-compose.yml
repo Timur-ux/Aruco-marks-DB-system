@@ -1,20 +1,17 @@
 services:
-  nginx:
-    # image: nginx
+  frontend:
     build:
       context: ./frontend/
     ports:
       - 8080:80
-    # volumes:
-    #   - ./create-intro/build/://usr/share/nginx/html
     networks:
       - frontend
 
-  flaskbackend:
+  backend:
     build:
       context: ./backend/
     ports:
-      - 5000:5000
+      - 5000:8000
     networks:
       - frontend
       - backend
