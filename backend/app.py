@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 import src.db.sessionManager as sm
-from src.db.requests import processAuth
+from src.db.requests import processAuth, processRegister
 from src.core.config import DB_CONFIG
 
 import json
@@ -20,7 +20,6 @@ app.add_middleware(
         CORSMiddleware,
 
         allow_origins=origins,
-        # allow_origins=["*"],
         allow_credentials=True,
         allow_methods=['*'],
         allow_headers=['*']
@@ -36,6 +35,17 @@ def index():
 @app.get('/api/login')
 def auth(access, login, password):
     response = processAuth(sessionManager, access, login, password)
+
+    if("error" in response):
+        response = JSONResponse(content={"message": response["error"]}, status_code=int(response["code"]))
+    else:
+        response = JSONResponse(content=response)
+
+    return response
+
+@app.get('/api/register')
+def register(access, login, password):
+    response = processRegister(sessionManager, access, login, password)
     print(response)
 
     if("error" in response):
