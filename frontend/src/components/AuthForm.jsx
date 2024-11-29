@@ -30,8 +30,8 @@ const AuthForm = () => {
       if(response.status == 200) {
         dispatch(setAccess(access))
 
-        fetchRequests(access).then((data) => {
-          const requests = data.data;
+        fetchRequests(access).then((responseData) => {
+          const requests = responseData.data.requests;
           dispatch(setRequests({ requests: requests }));
           dummy();
         });

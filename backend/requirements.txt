@@ -34,4 +34,5 @@ typing-extensions==4.12.2
 uvicorn==0.32.1
     # via -r requirements.in
 
-numpy
+# custom
+devtools

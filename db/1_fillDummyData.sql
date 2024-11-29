@@ -70,3 +70,31 @@ values
     'admin',
     '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918'
   );
+
+insert into
+  marks(mark_id, mark_type, location_id, last_position)
+values
+  (
+    24,
+    (select id from mark_types where name = 'aruco' limit 1),
+    (select id from locations limit 1),
+    array[0, 0, 0]
+  ),
+  (
+    124,
+    (select id from mark_types where name = 'aruco' limit 1),
+    (select id from locations limit 1),
+    array[0, 5, 19]
+  ),
+  (
+    22,
+    (select id from mark_types where name = 'apriltag' limit 1),
+    (select id from locations limit 1),
+    array[1, 1, 12]
+  ),
+  (
+    18,
+    (select id from mark_types where name = 'aruco' limit 1),
+    (select id from locations limit 1),
+    array[0, 1, 0]
+  );

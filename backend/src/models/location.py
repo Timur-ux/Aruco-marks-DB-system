@@ -1,8 +1,8 @@
 from pydantic import BaseModel
-import numpy as np
+from typing import List
 
 class Location(BaseModel):
     id: int
     name: str
-    min_pos: np.ndarray
-    max_pos: np.ndarray
+    min_pos: List[float]
+    max_pos: List[float]

@@ -1,11 +1,18 @@
 #!venv/bin/python
+from typing import Optional
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from src.models.message import ErrorMessage
+from src.core.errors import BackendError, NotFoundError
 import src.db.sessionManager as sm
-from src.db.requests import processAuth, processGetRequestsList, processRegister
+from src.service.requests import processAuth, processGetMarksList, processGetRequestsList, processRegister
 from src.core.config import DB_CONFIG
+
+LOG = True
+
+from devtools import pprint
 
 import json
 
@@ -27,6 +34,25 @@ app.add_middleware(
 
 sessionManager = sm.SessionManager(DB_CONFIG)
 
+def handleRequest(requestFunc, *args):
+    try:
+        if(LOG):
+            print("LOG: args: ", args)
+        response = requestFunc(*args)
+        if(LOG):
+            print("LOG: requestFunc: ", requestFunc, "\nresponse: ", end="")
+            pprint(response)
+    except BackendError as e:
+        message: ErrorMessage = e.args[0]
+        return JSONResponse(content=message.text, status_code=message.code)
+    except Exception as e:
+        print("Undefined exception: ", e.args, "\nSkipping...")
+        message = ErrorMessage(text="Undefined error", code=404)
+        return JSONResponse(content=message.text, status_code=message.code)
+
+    response = JSONResponse(content=response.model_dump())
+    return response
+        
 @app.get("/")
 def index():
     response = json.dumps({"data": "Hello From BACK.... END!!!!!!"})
@@ -34,43 +60,25 @@ def index():
 
 @app.get('/api/login')
 def auth(access:str, login:str, password:str):
-    response = processAuth(sessionManager, access, login, password)
-
-    if("error" in response):
-        response = JSONResponse(content={"message": response["error"]}, status_code=int(response["code"]))
-    else:
-        response = JSONResponse(content=response)
-
-    return response
+    return handleRequest(processAuth, sessionManager, access, login, password)
 
 @app.get('/api/register')
 def register(access:str, login:str, password:str):
-    response = processRegister(sessionManager, access, login, password)
-    print(response)
-
-    if("error" in response):
-        response = JSONResponse(content={"message": response["error"]}, status_code=int(response["code"]))
-    else:
-        response = JSONResponse(content=response)
-
-    return response
+    return handleRequest(processRegister, sessionManager, access, login, password)
 
 @app.get('/api/marks')
-def getMarksList():
-    response = JSONResponse({"data" :  "get marks list result"})
-    return response
+def getMarks(mark_id: Optional[int] = None):
+    if(mark_id is None):
+        return getMarksList()
+    else:
+        return getMarkData(mark_id)
 
-@app.get('/api/marks/{mark_id}')
+def getMarksList():
+    return handleRequest(processGetMarksList, sessionManager)
+
 def getMarkData(mark_id: int):
-    response = JSONResponse({"data" : f"get data of mark with id: {mark_id}"})
-    return response
+    return {} # handleRequest(processGetMarksList) # TODO
 
 @app.get('/api/requests')
 def getListOfRequests(access:str):
-    response = processGetRequestsList(sessionManager, access)
-
-    if("error" in response):
-        return JSONResponse(content={"message": response["error"]}, status_code=int(response["code"]))
-
-    return JSONResponse(content=response)
-    
+    return  handleRequest(processGetRequestsList, sessionManager, access)

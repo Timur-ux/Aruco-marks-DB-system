@@ -1,5 +1,5 @@
 #!/bin/bash
 
-docker compose down db
+docker compose down postgres 
 rm -r ./db/storage/
-docker compose up -d db && docker compose logs db
+docker compose up -d postgres && docker compose logs postgres
