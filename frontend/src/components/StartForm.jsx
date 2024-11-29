@@ -1,23 +1,57 @@
-import style from "./style.js";
+import style from "../style.js";
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
+import { setRequests } from "../reducer/requests.js";
+import { useDispatch } from "react-redux";
 
 const StartForm = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  dispatch(setRequests({
+    requests: [
+      {label: "Получить все марки",
+        uri: "/api/marks"
+      },
+      {
+        label: "Получить всех пользователей",
+        uri: "/api/users"
+      },
+      {
+        label: "Получить все действия пользоваетелей",
+        uri: "/api/users/actions"
+      }
+    ]
+  }));
 
   const onUserClick = (event) => {
     console.log("User clicked");
-    navigate("/user");
+    navigate("Auth", {
+      state: {
+      profileName: "Рядовой обыватель",
+      access:"user",
+    }
+    });
   };
 
   const onRedactorClick = (event) => {
     console.log("Redactor clicked");
-    navigate("/redactor");
+    navigate("Auth", {
+      state: {
+      profileName: "Сержант редактор",
+      access:"redactor",
+    }
+    });
   };
 
   const onAdminClick = (event) => {
     console.log("Admin clicked");
-    navigate("/admin");
+    navigate("Auth", {
+      state: {
+      profileName: "Генеральный генерал",
+      access:"administrator",
+    }
+    });
   };
 
   return (

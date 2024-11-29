@@ -3,7 +3,6 @@ from psycopg2.extras import DictCursor
 
 from src.core.errors import AccessError, DataBaseError, NotFoundError
 from src.db.fabric import accessFabric, userFabric
-from src.models.user import User
 import src.db.sessionManager as sm
 
 def processAuth(sessionManager: sm.SessionManager, access: str, login: str, password: str):
@@ -57,6 +56,11 @@ def processRegister(sessionManager: sm.SessionManager, access: str, login: str, 
         "code" : 409
         }
 
+def processGetRequestsList(sessionManager: sm.SessionManager, access_: str):
+    try:
+        access = accessFabric(sessionManager, access_)
+    except NotFoundError as e:
+        return {"error": e.args, "code": 404}
 
-            
-            
+
+

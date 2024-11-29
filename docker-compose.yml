@@ -1,11 +1,19 @@
 services:
-  frontend:
+  frontend: # for deploy
     build:
       context: ./frontend/
     ports:
       - 8080:80
     networks:
       - frontend
+  
+  # frontend: # for develop(doesn't work)
+  #   build:
+  #     dockerfile: ./frontend/dev.Dockerfile
+  #   ports:
+  #     - 8080:3000
+  #   volumes:
+  #     - ./frontend/:/app
 
   backend:
     build:

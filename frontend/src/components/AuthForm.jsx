@@ -3,14 +3,31 @@ import style from "../style";
 import ProfileData from "./ProfileData";
 import TextField from "./TextField";
 import { setLogin, setPassword } from "../reducer/authReducer";
-import {useSelector} from "react-redux"
+import {useDispatch, useSelector} from "react-redux"
+import { useLocation } from "react-router";
+import { authFunc } from "../service/authFunc";
+import { useNavigate } from "react-router";
 
-const AuthForm = ({profileName, processAuth}) => {
+const AuthForm = () => {
+  const navigate = useNavigate()
+
+  const {profileName, access} = useLocation().state
+  const processAuth = authFunc(access)
+
   const login = useSelector(state => state.login.value)
   const password = useSelector(state => state.password.value)
 
   const onSendClick = () => {
-    processAuth(login, password)
+    console.log("Processing auth...")
+    processAuth(login, password).then((response) => {
+      console.log("Status: ", response.status, response.statusText)
+      if(response.status == 200) {
+        navigate("/requests")
+      }
+      else {
+        console.log("Invalid auth", response);
+      }
+    })
   }
 
   return (

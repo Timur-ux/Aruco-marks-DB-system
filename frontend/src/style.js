@@ -54,6 +54,11 @@ const style = {
 
   borderedBlock: {
     border: "1px solid gray"
+  },
+
+  button: {
+    margin: "10px",
+    padding: "5px",
   }
 }
 

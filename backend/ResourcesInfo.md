@@ -3,6 +3,8 @@
 |Method HTTP| URI | Action|
 |-----------|-----|-------|
 |GET| http://[hostname]/api/login | login request|
+|GET| http://[hostname]/api/register | register request|
+|GET| http://[hostname]/api/requests/[access] | get list of available requests for pointed access |
 |GET| http://[hostname]/api/marks | Get list of existing marks |
 |GET| http://[hostname]/api/marks/[mark_id] | Get data of mark with mark_id |
 |POST| http://[hostname]/api/marks/[mark_id] | Change data of mark with mark_id |

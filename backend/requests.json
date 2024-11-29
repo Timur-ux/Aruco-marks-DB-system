@@ -1,0 +1,130 @@
+{
+  "read": [
+    {
+      "name": "Получить данные о существующих марках",
+      "type": "GET",
+      "uri": "/api/marks",
+      "fields": []
+    },
+    {
+      "name": "Получить данные конкретной марке",
+      "type": "GET",
+      "uri": "/api/marks",
+      "fields": [
+        {
+          "name": "mark_id",
+          "type": "int"
+        }
+      ]
+    }
+  ],
+  "edit_table": [
+    {
+      "name": "Изменить данные о марке",
+      "type": "POST",
+      "uri": "/api/marks",
+      "fields": [
+        {
+          "name": "mark_id",
+          "type": "int"
+        },
+        {
+          "name": "parameters",
+          "type": "parameters_dict"
+        }
+      ]
+    },
+    {
+      "name": "Добавить новую марку",
+      "type": "PUT",
+      "uri": "/api/marks",
+      "fields": [
+        {
+          "name": "mark_id",
+          "type": "int"
+        },
+        {
+          "name": "parameters",
+          "type": "parameters_dict"
+        }
+      ]
+    },
+    {
+      "name": "Удалить марку",
+      "type": "DELETE",
+      "uri": "/api/marks",
+      "fields": [
+        {
+          "name": "mark_id",
+          "type": "int"
+        }
+      ]
+    }
+  ],
+  "edit_users": [
+    {
+      "name": "Получить информацию о всех пользователях",
+      "type": "GET",
+      "uri": "/api/users",
+      "fields": []
+    },
+    {
+      "name": "Получить информацию конкретном пользователе",
+      "type": "GET",
+      "uri": "/api/users",
+      "fields": [
+        {
+          "name": "user_id",
+          "type": "int"
+        }
+      ]
+    },
+    {
+      "name": "Удалить пользователя",
+      "type": "DELETE",
+      "uri": "/api/users",
+      "fields": [
+        {
+          "name": "user_id",
+          "type": "int"
+        }
+      ]
+    },
+    {
+      "name": "Получить действия пользователя",
+      "type": "GET",
+      "uri": "/api/user_actions",
+      "fields": [
+        {
+          "name": "user_id",
+          "type": "int"
+        }
+      ]
+    },
+    {
+      "name": "Получить действия всех пользователей",
+      "type": "GET",
+      "uri": "/api/user_actions",
+      "fields": []
+    },
+    {
+      "name": "Добавить пользователя",
+      "type": "GET",
+      "uri": "/api/users",
+      "fields": [
+        {
+          "name": "access",
+          "type": "string"
+        },
+        {
+          "name": "login",
+          "type": "string"
+        },
+        {
+          "name": "password",
+          "type": "string"
+        }
+      ]
+    }
+  ]
+}

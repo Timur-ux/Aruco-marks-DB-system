@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 import src.db.sessionManager as sm
-from src.db.requests import processAuth, processRegister
+from src.db.requests import processAuth, processGetRequestsList, processRegister
 from src.core.config import DB_CONFIG
 
 import json
@@ -29,11 +29,11 @@ sessionManager = sm.SessionManager(DB_CONFIG)
 
 @app.get("/")
 def index():
-    response = json.dumps({"data": "Hello vova"})
+    response = json.dumps({"data": "Hello From BACK.... END!!!!!!"})
     return response
 
 @app.get('/api/login')
-def auth(access, login, password):
+def auth(access:str, login:str, password:str):
     response = processAuth(sessionManager, access, login, password)
 
     if("error" in response):
@@ -44,7 +44,7 @@ def auth(access, login, password):
     return response
 
 @app.get('/api/register')
-def register(access, login, password):
+def register(access:str, login:str, password:str):
     response = processRegister(sessionManager, access, login, password)
     print(response)
 
@@ -60,7 +60,12 @@ def getMarksList():
     response = JSONResponse({"data" :  "get marks list result"})
     return response
 
-@app.get('/api/marks/')
-def processMark(mark_id):
+@app.get('/api/marks/{mark_id}')
+def getMarkData(mark_id: int):
     response = JSONResponse({"data" : f"get data of mark with id: {mark_id}"})
     return response
+
+@app.get('/api/requests')
+def getListOfRequests(access:str):
+    processGetRequestsList(sessionManager, access)
+    

@@ -1,9 +1,9 @@
 import "./App.css";
 import style from "./style.js";
-import StartForm from "./startForm";
+import StartForm from "./components/StartForm";
 import { BrowserRouter as Router, Routes, Route} from "react-router-dom";
 import AuthForm from "./components/AuthForm";
-import { administratorAuth, redactorAuth, userAuth } from "./authFunc";
+import RequestListForm from "./components/RequestListForm";
 
 const App = () => {
   return (
@@ -11,9 +11,8 @@ const App = () => {
     <Router>
       <Routes>
         <Route path="/" element={<StartForm/>} />
-        <Route path="/user" element={<AuthForm profileName={"User"} processAuth={userAuth} />} />
-        <Route path="/redactor" element={<AuthForm profileName={"Redactor"} processAuth={redactorAuth} />} />
-        <Route path="/admin" element={<AuthForm profileName={"Administrator"} processAuth={administratorAuth} />} />
+        <Route path="/Auth" element={<AuthForm />} />
+        <Route path="/requests" element={<RequestListForm />} />
       </Routes>
     </Router>
     </div>
