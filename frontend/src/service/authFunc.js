@@ -8,6 +8,7 @@ export const authFunc = access => async (login, password) => {
     password: await getSHA256Hash(password),
   }})
 
+
   return response;
 }
 

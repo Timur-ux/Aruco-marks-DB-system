@@ -13,7 +13,6 @@ const style = {
     width: "fit-content",
     textAligment: "center",
   },
-
   textCentered: {
     textAlign: "center"
   },
@@ -59,7 +58,12 @@ const style = {
   button: {
     margin: "10px",
     padding: "5px",
-  }
+  },
+
+  dataField: {
+    margin: "10px",
+    padding: "5px",
+  },
 }
 
 export default style;

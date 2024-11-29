@@ -11,6 +11,7 @@ const requestsReducer_ = createSlice({
       state.requests = action.payload.requests;
     },
     addRequests(state, action) {
+      console.log("Adding requests: ", action.payload.requests);
       state.requests += action.payload.requests;
     },
   },

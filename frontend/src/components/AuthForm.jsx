@@ -2,13 +2,17 @@ import React from "react";
 import style from "../style";
 import ProfileData from "./ProfileData";
 import TextField from "./TextField";
-import { setLogin, setPassword } from "../reducer/authReducer";
+import { setLogin, setPassword, setAccess } from "../reducer/authReducer";
 import {useDispatch, useSelector} from "react-redux"
 import { useLocation } from "react-router";
 import { authFunc } from "../service/authFunc";
 import { useNavigate } from "react-router";
+import fetchRequests from "../service/fetchRequests";
+import { dummy } from "../service/client";
+import { setRequests } from "../reducer/requests";
 
 const AuthForm = () => {
+  const dispatch = useDispatch()
   const navigate = useNavigate()
 
   const {profileName, access} = useLocation().state
@@ -19,9 +23,19 @@ const AuthForm = () => {
 
   const onSendClick = () => {
     console.log("Processing auth...")
+
     processAuth(login, password).then((response) => {
       console.log("Status: ", response.status, response.statusText)
+
       if(response.status == 200) {
+        dispatch(setAccess(access))
+
+        fetchRequests(access).then((data) => {
+          const requests = data.data;
+          dispatch(setRequests({ requests: requests }));
+          dummy();
+        });
+
         navigate("/requests")
       }
       else {
