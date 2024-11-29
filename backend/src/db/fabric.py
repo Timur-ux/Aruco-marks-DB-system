@@ -6,40 +6,58 @@ import src.db.sessionManager as sm
 from contextlib import closing
 from psycopg2.extras import DictCursor
 
+from typing import List
 
-def accessFabric(sessionManager: sm.SessionManager, access_: str):
-    with closing(sessionManager.createSession()) as session:
-        with session.cursor(cursor_factory=DictCursor) as cursor:
-            session.autocommit = True
+def printError(table: str, error: Exception):
+    print(f"Error while requesting to {table}, error text: {error.args}")
 
-            try:
-                cursor.execute("select * from access where name = %s;", (access_,))
-            except Exception as e:
-                raise DataBaseError("database error")
-            accesses = cursor.fetchall()
-            if(accesses == []):
-                raise NotFoundError("Invalid access")
-            print(accesses)
-            return Access(id = accesses[0]["id"], name = accesses[0]["name"], privileges=list(map(lambda x: Privilege(id=x), accesses[0]["privileges"])))
+def privilegeFabric(cursor: DictCursor, ids: List[int]) -> List[Privilege]:
+    print("Required privileges: ", ids)
+    try:
+        sql = "select * from privilege where id in %s;"
+        cursor.execute(sql, (tuple(ids), ))
+    except Exception as e:
+        printError("privilege", e)
+        raise DataBaseError("database error")
 
-def userFabric(sessionManager: sm.SessionManager, access_: str, login: str, password: str):
-    with closing(sessionManager.createSession()) as session:
-        with session.cursor(cursor_factory=DictCursor) as cursor:
-            session.autocommit = True
+    privileges: List[Privilege] = []
+    for id, name in cursor.fetchall():
+        privileges.append(Privilege(id=id, name=name))
 
-            access = accessFabric(sessionManager, access_)
-            # TODO: Some logic to validate access and login and password
-            try:
-                cursor.execute("select * from users where login = %s and password = %s;", (login, password))
-            except Exception as e:
-                raise DataBaseError("database error")
-            
-            users = cursor.fetchall();
-            if(users == []):
-                raise NotFoundError("Invalid user login and/or password")
+    return privileges
 
-            for user in users:
-                if(user['access_level'] == access.id):
-                    return User(id=user["id"], login=user["login"], password=password, access=access)
 
-        raise AccessError("Access denied")
+
+def accessFabric(cursor: DictCursor, access_: str):
+    try:
+        cursor.execute("select * from access where name = %s;", (access_,))
+        access = cursor.fetchone()
+
+        if(access is None):
+            raise NotFoundError("Invalid access")
+
+        privileges = privilegeFabric(cursor, access["privileges"])
+    except Exception as e:
+        printError("access", e)
+        raise DataBaseError("database error")
+
+    return Access(id = access["id"], name = access["name"], privileges=privileges)
+
+def userFabric(cursor: DictCursor, access_: str, login: str, password: str):
+    access = accessFabric(cursor, access_)
+    # TODO: Some logic to validate access and login and password
+    try:
+        cursor.execute("select * from users where login = %s and password = %s;", (login, password))
+    except Exception as e:
+        printError("users", e)
+        raise DataBaseError("database error")
+    
+    users = cursor.fetchall();
+    if(users == []):
+        raise NotFoundError("Invalid user login and/or password")
+
+    for user in users:
+        if(user['access_level'] == access.id):
+            return User(id=user["id"], login=user["login"], password=password, access=access)
+
+    raise AccessError("Access denied")

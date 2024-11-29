@@ -67,5 +67,10 @@ def getMarkData(mark_id: int):
 
 @app.get('/api/requests')
 def getListOfRequests(access:str):
-    processGetRequestsList(sessionManager, access)
+    response = processGetRequestsList(sessionManager, access)
+
+    if("error" in response):
+        return JSONResponse(content={"message": response["error"]}, status_code=int(response["code"]))
+
+    return JSONResponse(content=response)
     
