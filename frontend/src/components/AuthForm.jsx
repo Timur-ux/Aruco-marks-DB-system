@@ -45,11 +45,11 @@ const AuthForm = () => {
   }
 
   return (
-  <div style={style.mainBlock}>
+  <div>
     <ProfileData profileName={profileName}/>
 
-    <div style={{...style.centered, ...style.mainForm}}>
-      <h3 style={style.centeredWidth}>Авторизация</h3>
+    <div style={{...style.centered}}>
+      <h3 style={style.textCentered}>Авторизация</h3>
 
       <TextField label="Login" fieldStyle={style.logInDataField} actionCreator={setLogin}/>
       <TextField label="Password" type="password" fieldStyle={style.logInDataField} actionCreator={setPassword}/>

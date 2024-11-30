@@ -3,16 +3,8 @@ const style = {
     marginLeft: "auto",
     marginRight: "auto",
     width: "fit-content",
-    textAligment: "center",
-    border: "1px solid black"
   },
 
-  centeredWidth: {
-    marginLeft: "auto",
-    marginRight: "auto",
-    width: "fit-content",
-    textAligment: "center",
-  },
   textCentered: {
     textAlign: "center"
   },
@@ -64,6 +56,14 @@ const style = {
     margin: "10px",
     padding: "5px",
   },
+  tableCell: {
+    border: "1px solid black",
+    padding: "5px"
+  },
+  tableRow: {
+    margin: "5px"
+  },
+  table: { }
 }
 
 export default style;

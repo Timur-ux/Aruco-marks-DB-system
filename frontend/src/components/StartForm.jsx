@@ -36,14 +36,8 @@ const StartForm = () => {
   };
 
   return (
-    <div
-      style={{
-        ...style.centeredWidth,
-        ...style.textCentered,
-        ...style.mainForm,
-      }}
-    >
-      <p>
+    <div>
+      <p style={style.textCentered}>
         <h3>
           Добро пожаловать в сервис отслеживания Aruco меток <br />
           Выберите профиль:

@@ -1,13 +1,23 @@
-import React from "react";
+import React, { useEffect } from "react";
 import style from "../style";
 import DataField from "./DataField";
 import { useState } from "react";
 import processRequest from "../service/processRequest";
+import { onFilled, setColumns, setRows } from "../reducer/table";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 
 const RequestListItem = ({ name, uri, type, fields }) => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  
   const states = fields.map((_) => "");
 
-  const onClick = () => {
+  const handleRequest = () => {
+    navigate("/table_display");
+  }
+
+  const onClick = async () => {
     console.log("URI: ", uri);
     const namedParams = {}
     for (let i = 0; i < fields.length; i++) {
@@ -15,8 +25,17 @@ const RequestListItem = ({ name, uri, type, fields }) => {
     }
 
     console.log("Params: ", namedParams);
-    const response = processRequest(type, uri, namedParams)
-    console.log("Response: ", response)
+    const response = await processRequest(type, uri, namedParams)
+    const data = response.data;
+    if(data.type == "Tabled") {
+      const {columns, rows} = data.data;
+      dispatch(setColumns(columns));
+      dispatch(setRows(rows));
+
+      console.log("Clicked on: ", name);
+      handleRequest();
+    } else
+      console.log("Warn: Tabled response type waited but given: ", data.type);
   };
 
   const fieldItems = [];
