@@ -3,7 +3,7 @@ from psycopg2.extras import DictCursor
 import json
 
 from src.models.request import Request
-from src.models.message import AuthMessage, DataMessage, ErrorMessage, Message, RequestsListMessage
+from src.models.message import AuthMessage, DataMessage, ErrorMessage, Message, RequestsListMessage, TabledMessage
 from src.core.errors import AccessError, AlreadyExistError, BackendError, DataBaseError, NotFoundError
 from src.db.fabric import accessFabric, markFabric, userFabric
 from src.models.listOfMarks import ListOfMarks
@@ -76,6 +76,9 @@ def processGetMarksList(sessionManager: sm.SessionManager):
             try:
                 cursor.execute("select id from marks;")
                 ids = cursor.fetchall()
+
+                cursor.execute("select column_name from information_schema.columns where table_name=%s", ("marks", ))
+                columns: List[str] = list(map(lambda x: x[0], cursor.fetchall()))
             except Exception as e:
                 raise DataBaseError()
 
@@ -87,6 +90,6 @@ def processGetMarksList(sessionManager: sm.SessionManager):
                     print("Warn: can't create mark object with id: ", item["id"], "\nError message: ", e.args)
                     continue
 
-            result = ListOfMarks(marks=marks)
+            result = TabledMessage(columns=columns, rows=marks)
 
-            return Message(type="MarksList", data=result)
+            return Message(type="Tabled", data=result)

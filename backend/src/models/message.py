@@ -18,3 +18,8 @@ class AuthMessage(DataMessage):
 
 class RequestsListMessage(BaseModel):
     requests: List[Request]
+
+class TabledMessage(BaseModel):
+    columns: List[str]
+    rows: List[SerializeAsAny[BaseModel]]
+
