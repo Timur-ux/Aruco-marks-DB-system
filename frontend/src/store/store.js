@@ -1,4 +1,4 @@
-import { configureStore } from "@reduxjs/toolkit";
+import { applyMiddleware, configureStore } from "@reduxjs/toolkit";
 import {
   loginReducer,
   passwordReducer,
@@ -6,6 +6,7 @@ import {
 } from "../reducer/authReducer";
 import { tableReducer } from "../reducer/table";
 import { requestsReducer } from "../reducer/requests";
+import { thunk } from "redux-thunk";
 
 export const store = configureStore({
   reducer: {
@@ -15,4 +16,4 @@ export const store = configureStore({
     table: tableReducer,
     requests: requestsReducer,
   },
-});
+}, applyMiddleware(thunk));

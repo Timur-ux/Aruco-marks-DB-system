@@ -23,3 +23,8 @@ class Request(BaseModel):
     uri: str
     fields: List[Field]
 
+
+class AuthRequest(BaseModel):
+    access: str
+    login: str
+    password: str

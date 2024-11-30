@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from src.models.request import AuthRequest
 from src.models.message import ErrorMessage
 from src.core.errors import BackendError, NotFoundError
 import src.db.sessionManager as sm
@@ -58,13 +59,13 @@ def index():
     response = json.dumps({"data": "Hello From BACK.... END!!!!!!"})
     return response
 
-@app.get('/api/login')
-def auth(access:str, login:str, password:str):
-    return handleRequest(processAuth, sessionManager, access, login, password)
+@app.post('/api/login')
+def auth(user: AuthRequest):
+    return handleRequest(processAuth, sessionManager, user.access, user.login, user.password)
 
-@app.get('/api/register')
-def register(access:str, login:str, password:str):
-    return handleRequest(processRegister, sessionManager, access, login, password)
+@app.post('/api/register')
+def register(user: AuthRequest):
+    return handleRequest(processRegister, sessionManager, user.access, user.login, user.password)
 
 @app.get('/api/marks')
 def getMarks(mark_id: Optional[int] = None):
