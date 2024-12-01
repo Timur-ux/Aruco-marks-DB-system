@@ -1,5 +1,6 @@
 from src.core.errors import AccessError, DataBaseError, NotFoundError
 
+from src.models.access_to_privilege import Access_to_privilege
 from src.models.privilege import Privilege
 from src.models.access import Access
 from src.models.mark import Mark
@@ -10,24 +11,48 @@ from src.models.location import Location
 from psycopg2.extras import DictCursor
 from typing import List
 
+from devtools import pprint
+
 def printError(table: str, error: Exception):
     print(f"Error while requesting to {table}, error text: {error.args}")
 
-def privilegeFabric(cursor: DictCursor, ids: List[int]) -> List[Privilege]:
-    print("Required privileges: ", ids)
+def processExecute(cursor: DictCursor, sql, table="undefined", *args):
     try:
-        sql = "select * from privilege where id in %s;"
-        cursor.execute(sql, (tuple(ids), ))
+        cursor.execute(sql, args)
     except Exception as e:
-        printError("privilege", e)
+        printError(table, e)
         raise DataBaseError()
 
-    privileges: List[Privilege] = []
-    for id, name in cursor.fetchall():
-        print(id, name)
-        privileges.append(Privilege(id=id, name=name))
+    return cursor
 
-    return privileges
+
+class PrivilegeFabric:
+    idsSql = "select * from privilege where id in %s;"
+    accessSql = "select * from access_to_privileges where access_id=%s;"
+    table = "privilege"
+
+    @staticmethod
+    def fromIds(cursor: DictCursor, ids: List[int]) -> List[Privilege]:
+        print("Required privileges: ", ids)
+        cursor = processExecute(cursor, PrivilegeFabric.idsSql, PrivilegeFabric.table, tuple(ids))
+        privileges: List[Privilege] = []
+        for row in cursor.fetchall():
+            privileges.append(Privilege(**row))
+
+        return privileges
+
+    @staticmethod
+    def fromAccess(cursor: DictCursor, access: Access) -> List[Privilege]:
+        print("Required privileges for access: ", access.name)
+        cursor = processExecute(cursor, PrivilegeFabric.accessSql, PrivilegeFabric.table, access.id)
+        binds: List[Access_to_privilege] = [Access_to_privilege(**x) for x in cursor.fetchall()]
+        privileges = PrivilegeFabric.fromIds(cursor, [x.privilege_id for x in binds])
+
+        print("Privileges: ")
+        pprint(privileges)
+
+        return privileges
+
 
 
 
@@ -38,13 +63,12 @@ def accessFabric(cursor: DictCursor, access_: str):
 
         if(access is None):
             raise NotFoundError("Invalid access")
-
-        privileges = privilegeFabric(cursor, access["privileges"])
     except Exception as e:
         printError("access", e)
         raise DataBaseError()
 
-    result = Access(id = access["id"], name = access["name"], privileges=privileges)
+    # result = Access(id = access["id"], name = access["name"])
+    result = Access(**access)
     print("Access: ", result)
     return result
 
@@ -63,7 +87,9 @@ def userFabric(cursor: DictCursor, access_: str, login: str, password: str):
 
     for user in users:
         if(user['access_level'] == access.id):
-            return User(id=user["id"], login=user["login"], password=password, access=access)
+            print("User: ", {**user})
+            # return User(id=user["id"], login=user["login"], password=password, access=access.id)
+            return User(**user)
 
     raise AccessError("Access denied")
 
@@ -78,7 +104,8 @@ def locationFabric(cursor: DictCursor, id: int):
     if(row is None):
         raise NotFoundError("No such location")
 
-    return Location(id = id, name = row["name"], min_pos=row["min_pos"], max_pos=row["max_pos"])
+    # return Location(id = id, name = row["name"], min_pos=row["min_pos"], max_pos=row["max_pos"])
+    return Location(**row)
 
 def mark_typeFabric(cursor: DictCursor, id: int):
     try:
@@ -91,7 +118,8 @@ def mark_typeFabric(cursor: DictCursor, id: int):
     if(row is None):
         raise NotFoundError("No such mark_type")
 
-    return MarkType(id = id, name=row["name"], family=row["family"])
+    # return MarkType(id = id, name=row["name"], family=row["family"])
+    return MarkType(**row)
 
 def markFabric(cursor: DictCursor, id: int):
     try:
@@ -99,11 +127,10 @@ def markFabric(cursor: DictCursor, id: int):
         row = cursor.fetchone()
         if(row is None):
             raise NotFoundError("No such mark_type")
-        location = locationFabric(cursor, row["location_id"])
-        mark_type = mark_typeFabric(cursor, row["mark_type"])
     except Exception as e:
         printError("marks", e)
         raise DataBaseError()
     
 
-    return Mark(id = id, mark_id=row["mark_id"], mark_type=mark_type, location=location, last_pos=row["last_position"])
+    # return Mark(id = id, mark_id=row["mark_id"], mark_type=row["mark_type"])
+    return Mark(**row)

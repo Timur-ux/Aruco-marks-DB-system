@@ -1,17 +1,14 @@
 from pydantic import BaseModel
-from src.models.privilege import Privilege
-from src.models.access import Access
+from datetime import datetime
 
 class User(BaseModel):
     id: int
+    access_level: int
     login: str
     password: str
-    access: Access
 
-def hasAccessTo(user: User, privilege: Privilege):
-    try:
-        user.access.privileges.index(privilege)
-    except ValueError:
-        return False
-
-    return True
+class UserAction(BaseModel):
+    id: int
+    action: str
+    user_id: int
+    time: datetime

@@ -7,6 +7,7 @@ import {
 import { tableReducer } from "../reducer/table";
 import { requestsReducer } from "../reducer/requests";
 import { thunk } from "redux-thunk";
+import { profileReducer } from "../reducer/profile";
 
 export const store = configureStore({
   reducer: {
@@ -15,5 +16,6 @@ export const store = configureStore({
     access: accessReducer,
     table: tableReducer,
     requests: requestsReducer,
+    profile: profileReducer,
   },
 }, applyMiddleware(thunk));

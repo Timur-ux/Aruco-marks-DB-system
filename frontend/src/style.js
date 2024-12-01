@@ -2,7 +2,6 @@ const style = {
   centered: {
     marginLeft: "auto",
     marginRight: "auto",
-    width: "fit-content",
   },
 
   textCentered: {
@@ -15,6 +14,7 @@ const style = {
     border: "2px solid black",
     borderRadius: "10px",
     backgroundColor: "#DDDDDD",
+    width: "60%",
   },
 
   mainBlock: {
@@ -25,11 +25,12 @@ const style = {
   justifiedContent: {
     display: "flex",
     justifyContent: "space-between",
+    flexWrap: "wrap"
   },
 
   profileData: {
-    width: "90vw",
-    padding: "1vmin",
+    width: "90%",
+    padding: "2%",
     textAlign: "right",
   },
 
@@ -48,8 +49,11 @@ const style = {
   },
 
   button: {
-    margin: "10px",
-    padding: "5px",
+    margin: "2%",
+    padding: "5%",
+    width: "fit-content",
+    borderRadius: "5px",
+    backgroundColor: "#AAAAAA",
   },
 
   dataField: {

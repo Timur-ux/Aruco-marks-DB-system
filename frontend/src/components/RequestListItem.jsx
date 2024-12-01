@@ -1,10 +1,9 @@
-import React, { useEffect } from "react";
+import React from "react";
 import style from "../style";
 import DataField from "./DataField";
-import { useState } from "react";
 import processRequest from "../service/processRequest";
-import { onFilled, setColumns, setRows } from "../reducer/table";
-import { useDispatch, useSelector } from "react-redux";
+import { setColumns, setRows } from "../reducer/table";
+import { useDispatch} from "react-redux";
 import { useNavigate } from "react-router-dom";
 
 const RequestListItem = ({ name, uri, type, fields }) => {
@@ -14,7 +13,7 @@ const RequestListItem = ({ name, uri, type, fields }) => {
   const states = fields.map((_) => "");
 
   const handleRequest = () => {
-    navigate("/table_display");
+    navigate("/profile/table_display");
   }
 
   const onClick = async () => {
@@ -50,7 +49,7 @@ const RequestListItem = ({ name, uri, type, fields }) => {
       <button style={style.button} onClick={onClick}>
         {name}
       </button>
-      <div style={{ ...style.justifiedContent, ...style.centeredWidth }}>
+      <div style={{ ...style.justifiedContent, ...style.centered }}>
         {fieldItems}
       </div>
     </div>

@@ -1,38 +1,29 @@
 import style from "../style.js";
 import React from "react";
 import { useNavigate } from "react-router";
+import { useDispatch } from "react-redux";
+import { setName } from "../reducer/profile.js";
 
 const StartForm = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const onUserClick = (event) => {
     console.log("User clicked");
-    navigate("Auth", {
-      state: {
-      profileName: "Рядовой обыватель",
-      access:"user",
-    }
-    });
+    dispatch(setName("Рядовой обыватель"));
+    navigate("auth/user");
   };
 
   const onRedactorClick = (event) => {
     console.log("Redactor clicked");
-    navigate("Auth", {
-      state: {
-      profileName: "Сержант редактор",
-      access:"redactor",
-    }
-    });
+    dispatch(setName("Сержант редактор"));
+    navigate("auth/redactor");
   };
 
   const onAdminClick = (event) => {
     console.log("Admin clicked");
-    navigate("Auth", {
-      state: {
-      profileName: "Генеральный генерал",
-      access:"administrator",
-    }
-    });
+    dispatch(setName("Генеральный генерал"));
+    navigate("auth/administrator");
   };
 
   return (
@@ -44,12 +35,18 @@ const StartForm = () => {
         </h3>
       </p>
       <div style={style.justifiedContent}>
-        <button style={style.mainForm} onClick={onUserClick}>Пользователь</button>
-        <button style={style.mainForm} onClick={onRedactorClick}>Редактор</button>
-        <button style={style.mainForm} onClick={onAdminClick}>Администратор</button>
+        <button style={style.button} onClick={onUserClick}>
+          Пользователь
+        </button>
+        <button style={style.button} onClick={onRedactorClick}>
+          Редактор
+        </button>
+        <button style={style.button} onClick={onAdminClick}>
+          Администратор
+        </button>
       </div>
     </div>
   );
-}
+};
 
 export default StartForm;

@@ -5,8 +5,7 @@ import json
 from src.models.request import Request
 from src.models.message import AuthMessage, DataMessage, ErrorMessage, Message, RequestsListMessage, TabledMessage
 from src.core.errors import AccessError, AlreadyExistError, BackendError, DataBaseError, NotFoundError
-from src.db.fabric import accessFabric, markFabric, userFabric
-from src.models.listOfMarks import ListOfMarks
+from src.db.fabric import PrivilegeFabric, accessFabric, markFabric, userFabric
 from typing import List
 
 import src.db.sessionManager as sm
@@ -51,11 +50,12 @@ def processGetRequestsList(sessionManager: sm.SessionManager, access_: str):
 
             print("Required request list for access: ", access_)
             access = accessFabric(cursor, access_)
+            privileges = PrivilegeFabric.fromAccess(cursor, access)
 
             requests: List[Request] = []
             with open("./requests.json") as file:
                 allRequests = json.load(file)
-                for privilege in access.privileges:
+                for privilege in privileges:
                     for requestData in allRequests[privilege.name]:
                         print("Request: ", end="")
                         pprint(Request(**requestData))
@@ -72,7 +72,6 @@ def processGetMarksList(sessionManager: sm.SessionManager):
     with closing(sessionManager.createSession()) as session:
         with session.cursor(cursor_factory=DictCursor) as cursor:
             session.autocommit = True
-
             try:
                 cursor.execute("select id from marks;")
                 ids = cursor.fetchall()

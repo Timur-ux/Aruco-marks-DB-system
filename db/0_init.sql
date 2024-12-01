@@ -14,7 +14,7 @@ create table  objects (
   size float[3],
   location_id bigint not null,
   last_position float[3],
-  last_update_time : timestamp
+  last_update_time timestamp
 );
 
 create table  locations (
@@ -30,11 +30,6 @@ create table  mark_types (
   family varchar(100)
 );
 
-create table access_to_privileges (
-  access_id bigint not null,
-  privilege_id bigint not null
-);
-
 create table  user_actions (
   id bigserial primary key,
   action varchar(100) not null,
@@ -47,6 +42,11 @@ create table  users (
   access_level bigint not null,
   login varchar(100),
   password varchar(64)
+);
+
+create table access_to_privileges (
+  access_id bigint not null,
+  privilege_id bigint not null
 );
 
 create table  access (

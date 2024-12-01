@@ -17,7 +17,7 @@ from devtools import pprint
 
 import json
 
-app = FastAPI()
+app = FastAPI(docs_url="/api/docs", redoc_url="/api/redoc")
 
 # origins from where backend can accept requests
 origins = [
@@ -83,3 +83,4 @@ def getMarkData(mark_id: int):
 @app.get('/api/requests')
 def getListOfRequests(access:str):
     return  handleRequest(processGetRequestsList, sessionManager, access)
+

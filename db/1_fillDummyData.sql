@@ -45,22 +45,47 @@ values
   ( 'edit_users' );
 
 insert into
-  access(name, privileges)
+  access(name)
 values
   (
-    'user',
-    array(select id from privilege where name = 'read')
+    'user'
   ),
   (
-    'redactor',
-    array(select id from privilege
-     where name = 'read' or name = 'edit_table'
-    )
+    'redactor'
   ),
   (
-    'administrator',
-    array(select id from privilege)
+    'administrator'
   );
+
+insert into
+  access_to_privileges(access_id, privilege_id)
+values
+  (
+    (select id from access where name='user'),
+    (select id from privilege where name = 'read')
+  ),
+  (
+    (select id from access where name='redactor'),
+    (select id from privilege where name = 'read')
+  ),
+  (
+    (select id from access where name='redactor'),
+    (select id from privilege where name = 'edit_table')
+  ),
+  (
+    (select id from access where name='administrator'),
+    (select id from privilege where name = 'edit_table')
+  ),
+  (
+    (select id from access where name='administrator'),
+    (select id from privilege where name = 'edit_users')
+  ),
+  (
+    (select id from access where name='administrator'),
+    (select id from privilege where name = 'read')
+  );
+
+
 
 insert into
  users(access_level, login, password)
@@ -77,29 +102,21 @@ values
   );
 
 insert into
-  marks(mark_id, mark_type, location_id, last_position)
+  marks(mark_id, mark_type)
 values
   (
     24,
-    (select id from mark_types where name = 'aruco' limit 1),
-    (select id from locations limit 1),
-    array[0, 0, 0]
+    (select id from mark_types where name = 'aruco' limit 1)
   ),
   (
     124,
-    (select id from mark_types where name = 'aruco' limit 1),
-    (select id from locations limit 1),
-    array[0, 5, 19]
+    (select id from mark_types where name = 'aruco' limit 1)
   ),
   (
     22,
-    (select id from mark_types where name = 'apriltag' limit 1),
-    (select id from locations limit 1),
-    array[1, 1, 12]
+    (select id from mark_types where name = 'apriltag' limit 1)
   ),
   (
     18,
-    (select id from mark_types where name = 'aruco' limit 1),
-    (select id from locations limit 1),
-    array[0, 1, 0]
+    (select id from mark_types where name = 'aruco' limit 1)
   );

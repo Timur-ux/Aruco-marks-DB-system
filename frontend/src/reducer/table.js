@@ -18,8 +18,5 @@ const tableReducer_ = createSlice({
 });
 
 
-export const selectColumns = (state) => state.table.columns;
-export const selectRows = (state) => state.table.rows;
-
 export const {setColumns, setRows} = tableReducer_.actions;
 export const tableReducer = tableReducer_.reducer;
