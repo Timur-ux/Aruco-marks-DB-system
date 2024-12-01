@@ -4,23 +4,17 @@ create database ArucoService;
 
 create table  marks (
   id bigserial primary key,
-  mark_id int,
-  mark_type bigint not null,
-  location_id bigint not null,
-  last_position float[3]
-);
-
-create table  marks_on_objects (
-  mark_id bigint not null,
-  object_id bigint not null,
-  relative_pos float[3] not null
+  mark_id int not null,
+  mark_type bigint not null
 );
 
 create table  objects (
   id bigserial primary key,
   name varchar(200),
   size float[3],
-  marks bigint[]
+  location_id bigint not null,
+  last_position float[3],
+  last_update_time : timestamp
 );
 
 create table  locations (
@@ -36,10 +30,16 @@ create table  mark_types (
   family varchar(100)
 );
 
+create table access_to_privileges (
+  access_id bigint not null,
+  privilege_id bigint not null
+);
+
 create table  user_actions (
   id bigserial primary key,
+  action varchar(100) not null,
   user_id bigint not null,
-  action varchar(100) not null
+  time timestamp not null
 );
 
 create table  users (
@@ -51,11 +51,16 @@ create table  users (
 
 create table  access (
   id bigserial primary key,
-  name varchar(100),
-  privileges bigint[] not null
+  name varchar(100)
 );
 
 create table  privilege (
   id bigserial primary key,
   name varchar(100) not null
+);
+
+create table  marks_on_objects (
+  mark_id bigint not null,
+  object_id bigint not null,
+  relative_pos float[3] not null
 );
