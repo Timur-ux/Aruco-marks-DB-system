@@ -5,6 +5,7 @@ import processRequest from "../service/processRequest";
 import { setColumns, setRows } from "../reducer/table";
 import { useDispatch} from "react-redux";
 import { useNavigate } from "react-router-dom";
+import preprocessNamedParams from "../service/preprocessNamedParams";
 
 const RequestListItem = ({ name, uri, type, fields }) => {
   const dispatch = useDispatch();
@@ -23,8 +24,9 @@ const RequestListItem = ({ name, uri, type, fields }) => {
       namedParams[fields[i].name] = states[i]
     }
 
-    console.log("Params: ", namedParams);
-    const response = await processRequest(type, uri, namedParams)
+    const params = await preprocessNamedParams({params: namedParams, fields: fields});
+    console.log("Params: ", params);
+    const response = await processRequest(type, uri, params)
     const data = response.data;
     if(data.type == "Tabled") {
       const {columns, rows} = data.data;

@@ -4,7 +4,7 @@ from src.models.access_to_privilege import Access_to_privilege
 from src.models.privilege import Privilege
 from src.models.access import Access
 from src.models.mark import Mark
-from src.models.user import User
+from src.models.user import User, UserAction
 from src.models.mark_type import MarkType
 from src.models.location import Location
 
@@ -72,26 +72,55 @@ def accessFabric(cursor: DictCursor, access_: str):
     print("Access: ", result)
     return result
 
-def userFabric(cursor: DictCursor, access_: str, login: str, password: str):
-    access = accessFabric(cursor, access_)
-    # TODO: Some logic to validate access and login and password
-    try:
-        cursor.execute("select * from users where login = %s and password = %s;", (login, password))
-    except Exception as e:
-        printError("users", e)
-        raise DataBaseError()
-    
-    users = cursor.fetchall();
-    if(users == []):
-        raise NotFoundError("Invalid user login and/or password")
+class UserFabric:
+    byDataSql = "select * from users where login = %s and password = %s;"
+    byIdSql = "select * from users where id = %s;"
+    totalSql = "select * from users;"
 
-    for user in users:
+    @staticmethod
+    def byData(cursor: DictCursor, access_: str, login: str, password: str) -> User:
+        access = accessFabric(cursor, access_)
+        # TODO: Some logic to validate access and login and password
+        try:
+            cursor.execute(UserFabric.byDataSql, (login, password))
+        except Exception as e:
+            printError("users", e)
+            raise DataBaseError()
+
+        user = cursor.fetchone();
+        if(user is None):
+            raise NotFoundError("Invalid user login and/or password")
+
         if(user['access_level'] == access.id):
             print("User: ", {**user})
-            # return User(id=user["id"], login=user["login"], password=password, access=access.id)
             return User(**user)
 
-    raise AccessError("Access denied")
+        raise AccessError("Access denied")
+
+    @staticmethod
+    def byId(cursor: DictCursor, user_id: int) -> User:
+        # TODO: Some logic to validate access and login and password
+        try:
+            cursor.execute(UserFabric.byIdSql, (user_id, ))
+        except Exception as e:
+            printError("users", e)
+            raise DataBaseError()
+
+        user = cursor.fetchone();
+        if(user is None):
+            raise NotFoundError("No users found with this id")
+
+        return User(**user)
+
+    @staticmethod
+    def allUsers(cursor: DictCursor) -> List[User]:
+        try:
+            cursor.execute(UserFabric.totalSql)
+        except Exception as e:
+            printError("users", e)
+            raise DataBaseError()
+
+        return list(map(lambda x: User(**x), cursor.fetchall()))
 
 def locationFabric(cursor: DictCursor, id: int):
     try:
@@ -99,12 +128,11 @@ def locationFabric(cursor: DictCursor, id: int):
     except Exception as e:
         printError("locations", e)
         raise DataBaseError()
-    
+
     row = cursor.fetchone()
     if(row is None):
         raise NotFoundError("No such location")
 
-    # return Location(id = id, name = row["name"], min_pos=row["min_pos"], max_pos=row["max_pos"])
     return Location(**row)
 
 def mark_typeFabric(cursor: DictCursor, id: int):
@@ -113,7 +141,7 @@ def mark_typeFabric(cursor: DictCursor, id: int):
     except Exception as e:
         printError("mark_types", e)
         raise DataBaseError()
-    
+
     row = cursor.fetchone()
     if(row is None):
         raise NotFoundError("No such mark_type")
@@ -124,13 +152,45 @@ def mark_typeFabric(cursor: DictCursor, id: int):
 def markFabric(cursor: DictCursor, id: int):
     try:
         cursor.execute("select * from marks where id = %s", (id, ))
-        row = cursor.fetchone()
-        if(row is None):
-            raise NotFoundError("No such mark_type")
     except Exception as e:
         printError("marks", e)
         raise DataBaseError()
-    
+    row = cursor.fetchone()
+    if(row is None):
+        raise NotFoundError("No such mark_type")
+
 
     # return Mark(id = id, mark_id=row["mark_id"], mark_type=row["mark_type"])
     return Mark(**row)
+
+class UserActionsFabric:
+    allActionsSql = "select * from user_actions;"
+    byIdSql = "select * from user_actions where user_id=%s;"
+
+    @staticmethod
+    def allActions(cursor: DictCursor) -> List[UserAction]:
+        try:
+            cursor.execute(UserActionsFabric.allActionsSql)
+        except Exception as e:
+            printError("user_actions", e)
+            raise DataBaseError()
+        rows = cursor.fetchall()
+        if(rows == []):
+            raise NotFoundError("Actions not found")
+
+        return list(map(lambda x: UserAction(**x), rows))
+
+
+    @staticmethod
+    def byId(cursor: DictCursor, user_id: int) -> List[UserAction]:
+        try:
+            cursor.execute(UserActionsFabric.byIdSql, (user_id, ))
+        except Exception as e:
+            printError("user_actions", e)
+            raise DataBaseError()
+
+        rows = cursor.fetchall()
+        if(rows == []):
+            raise NotFoundError("Actions not found")
+
+        return list(map(lambda x: UserAction(**x), rows))

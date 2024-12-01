@@ -1,6 +1,6 @@
 from enum import Enum
 from pydantic import BaseModel
-from typing import List
+from typing import List, Dict
 
 class RequestType(str, Enum):
     get = "GET"
@@ -12,6 +12,7 @@ class FieldType(str, Enum):
     int = "int"
     parameters = "parameters_dict"
     string = "string"
+    string256 = "string(sha256)"
 
 class Field(BaseModel):
     name: str
@@ -28,3 +29,17 @@ class AuthRequest(BaseModel):
     access: str
     login: str
     password: str
+
+class ChangeMarkDataRequest(BaseModel):
+    mark_id: int
+    parameters: Dict
+
+class AddNewMarkRequest(BaseModel):
+    mark_id: int
+    mark_type: int
+
+class DeleteMarkRequest(BaseModel):
+    mark_id: int
+
+class DeleteUserRequest(BaseModel):
+    user_id: int

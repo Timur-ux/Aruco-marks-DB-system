@@ -14,7 +14,8 @@ const style = {
     border: "2px solid black",
     borderRadius: "10px",
     backgroundColor: "#DDDDDD",
-    width: "60%",
+    minWidth: "60%",
+    width: "fit-content",
   },
 
   mainBlock: {

@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_serializer
 from datetime import datetime
 
 class User(BaseModel):
@@ -12,3 +12,7 @@ class UserAction(BaseModel):
     action: str
     user_id: int
     time: datetime
+
+    @field_serializer("time")
+    def serialize_time(self, time: datetime, _info):
+        return time.strftime("%Y-%m-%d %H:%M:%S")

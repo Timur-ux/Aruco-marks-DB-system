@@ -5,7 +5,6 @@ class BackendError(Exception):
         super().__init__()
         self.args = (message,)
 
-
 class AccessError(BackendError):
     def __init__(self, message: str = "Access Denied"):
         super().__init__(ErrorMessage(text=message, code=403))
