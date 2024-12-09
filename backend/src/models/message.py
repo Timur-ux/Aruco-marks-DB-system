@@ -18,8 +18,7 @@ class DataMessage(BaseModel):
 
 
 class AuthMessage(DataMessage):
-    token: str
-
+    pass
 
 class RequestsListMessage(BaseModel):
     requests: List[Request]

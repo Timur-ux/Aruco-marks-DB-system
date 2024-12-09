@@ -1,12 +1,12 @@
 #!venv/bin/python
-from typing import Optional, Dict
-from fastapi import FastAPI
+import time
+from typing import Optional
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from src.models.request import AddNewMarkRequest, AuthRequest, ChangeMarkDataRequest, DeleteMarkRequest, DeleteUserRequest
-from src.models.mark import Mark
-from src.models.message import ErrorMessage, Status, StatusMessage
+from src.models.message import ErrorMessage
 from src.core.errors import BackendError
 import src.db.sessionManager as sm
 from src.service.requests import RequestProccessor
@@ -37,14 +37,14 @@ app.add_middleware(
 sessionManager = sm.SessionManager(DB_CONFIG)
 requestProccessor = RequestProccessor(sessionManager)
 
-def handleRequest(requestFunc, *args):
+def handleRequest(requestFunc, *args, **kwargs):
     try:
         if(LOG):
             print("LOG: args: ", args)
-        response = requestFunc(*args)
+        responseData = requestFunc(*args, **kwargs)
         if(LOG):
             print("LOG: requestFunc: ", requestFunc, "\nresponse: ", end="")
-            pprint(response)
+            pprint(responseData)
     except BackendError as e:
         print("Backend error: ", e.args)
         message: ErrorMessage = e.args[0]
@@ -54,8 +54,7 @@ def handleRequest(requestFunc, *args):
         message = ErrorMessage(text="Undefined error", code=404)
         return JSONResponse(content=message.text, status_code=message.code)
 
-    response = JSONResponse(content=response.model_dump())
-    return response
+    return responseData.model_dump()
         
 
 # --------------------------
@@ -67,8 +66,11 @@ def index():
     return response
 
 @app.post('/api/login')
-def auth(user: AuthRequest):
-    return handleRequest(RequestProccessor.auth, requestProccessor, user.access, user.login, user.password)
+def auth(response: Response, user: AuthRequest):
+    data = handleRequest(RequestProccessor.auth, requestProccessor, user.access, user.login, user.password, response)
+    pprint(response)
+    response.set_cookie(key="some", value="none")
+    return data
 
 @app.post('/api/register')
 def register(user: AuthRequest):
@@ -89,6 +91,7 @@ def getMarkData(mark_id: int):
 
 @app.get('/api/requests')
 def getListOfRequests(access:str):
+    time.sleep(5)
     return handleRequest(RequestProccessor.getRequestsList, requestProccessor, access)
 
 @app.post("/api/marks")

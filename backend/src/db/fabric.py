@@ -1,5 +1,4 @@
 from src.core.errors import AccessError, DataBaseError, NotFoundError
-
 from src.models.access_to_privilege import Access_to_privilege
 from src.models.privilege import Privilege
 from src.models.access import Access
@@ -8,13 +7,17 @@ from src.models.user import User, UserAction
 from src.models.mark_type import MarkType
 from src.models.location import Location
 
+from src.service.password import verity_password
+
 from psycopg2.extras import DictCursor
 from typing import List
 
 from devtools import pprint
 
+
 def printError(table: str, error: Exception):
     print(f"Error while requesting to {table}, error text: {error.args}")
+
 
 def processExecute(cursor: DictCursor, sql, table="undefined", *args):
     try:
@@ -34,7 +37,8 @@ class PrivilegeFabric:
     @staticmethod
     def fromIds(cursor: DictCursor, ids: List[int]) -> List[Privilege]:
         print("Required privileges: ", ids)
-        cursor = processExecute(cursor, PrivilegeFabric.idsSql, PrivilegeFabric.table, tuple(ids))
+        cursor = processExecute(
+            cursor, PrivilegeFabric.idsSql, PrivilegeFabric.table, tuple(ids))
         privileges: List[Privilege] = []
         for row in cursor.fetchall():
             privileges.append(Privilege(**row))
@@ -44,9 +48,12 @@ class PrivilegeFabric:
     @staticmethod
     def fromAccess(cursor: DictCursor, access: Access) -> List[Privilege]:
         print("Required privileges for access: ", access.name)
-        cursor = processExecute(cursor, PrivilegeFabric.accessSql, PrivilegeFabric.table, access.id)
-        binds: List[Access_to_privilege] = [Access_to_privilege(**x) for x in cursor.fetchall()]
-        privileges = PrivilegeFabric.fromIds(cursor, [x.privilege_id for x in binds])
+        cursor = processExecute(
+            cursor, PrivilegeFabric.accessSql, PrivilegeFabric.table, access.id)
+        binds: List[Access_to_privilege] = [
+            Access_to_privilege(**x) for x in cursor.fetchall()]
+        privileges = PrivilegeFabric.fromIds(
+            cursor, [x.privilege_id for x in binds])
 
         print("Privileges: ")
         pprint(privileges)
@@ -54,14 +61,12 @@ class PrivilegeFabric:
         return privileges
 
 
-
-
 def accessFabric(cursor: DictCursor, access_: str):
     try:
         cursor.execute("select * from access where name = %s;", (access_,))
         access = cursor.fetchone()
 
-        if(access is None):
+        if (access is None):
             raise NotFoundError("Invalid access")
     except Exception as e:
         printError("access", e)
@@ -72,10 +77,27 @@ def accessFabric(cursor: DictCursor, access_: str):
     print("Access: ", result)
     return result
 
+
 class UserFabric:
     byDataSql = "select * from users where login = %s and password = %s;"
     byIdSql = "select * from users where id = %s;"
     totalSql = "select * from users;"
+    authSql = "select * from users where login = %s"
+
+    @staticmethod
+    def auth(cursor: DictCursor, login: str, plain_password: str) -> User | None:
+        try:
+            cursor.execute(UserFabric.authSql, (login,))
+        except Exception as e:
+            printError("users", e)
+            return None
+        userData = cursor.fetchone()
+        if userData is None:
+            return None
+        user = User(**userData)
+        if not verity_password(plain_password, user.password):
+            return None
+        return user
 
     @staticmethod
     def byData(cursor: DictCursor, access_: str, login: str, password: str) -> User:
@@ -87,11 +109,11 @@ class UserFabric:
             printError("users", e)
             raise DataBaseError()
 
-        user = cursor.fetchone();
-        if(user is None):
+        user = cursor.fetchone()
+        if (user is None):
             raise NotFoundError("Invalid user login and/or password")
 
-        if(user['access_level'] == access.id):
+        if (user['access_level'] == access.id):
             print("User: ", {**user})
             return User(**user)
 
@@ -106,8 +128,8 @@ class UserFabric:
             printError("users", e)
             raise DataBaseError()
 
-        user = cursor.fetchone();
-        if(user is None):
+        user = cursor.fetchone()
+        if (user is None):
             raise NotFoundError("No users found with this id")
 
         return User(**user)
@@ -122,6 +144,7 @@ class UserFabric:
 
         return list(map(lambda x: User(**x), cursor.fetchall()))
 
+
 def locationFabric(cursor: DictCursor, id: int):
     try:
         cursor.execute("select * from locations where id = %s", (id, ))
@@ -130,10 +153,11 @@ def locationFabric(cursor: DictCursor, id: int):
         raise DataBaseError()
 
     row = cursor.fetchone()
-    if(row is None):
+    if (row is None):
         raise NotFoundError("No such location")
 
     return Location(**row)
+
 
 def mark_typeFabric(cursor: DictCursor, id: int):
     try:
@@ -143,11 +167,12 @@ def mark_typeFabric(cursor: DictCursor, id: int):
         raise DataBaseError()
 
     row = cursor.fetchone()
-    if(row is None):
+    if (row is None):
         raise NotFoundError("No such mark_type")
 
     # return MarkType(id = id, name=row["name"], family=row["family"])
     return MarkType(**row)
+
 
 def markFabric(cursor: DictCursor, id: int):
     try:
@@ -156,12 +181,12 @@ def markFabric(cursor: DictCursor, id: int):
         printError("marks", e)
         raise DataBaseError()
     row = cursor.fetchone()
-    if(row is None):
+    if (row is None):
         raise NotFoundError("No such mark_type")
-
 
     # return Mark(id = id, mark_id=row["mark_id"], mark_type=row["mark_type"])
     return Mark(**row)
+
 
 class UserActionsFabric:
     allActionsSql = "select * from user_actions;"
@@ -175,11 +200,10 @@ class UserActionsFabric:
             printError("user_actions", e)
             raise DataBaseError()
         rows = cursor.fetchall()
-        if(rows == []):
+        if (rows == []):
             raise NotFoundError("Actions not found")
 
         return list(map(lambda x: UserAction(**x), rows))
-
 
     @staticmethod
     def byId(cursor: DictCursor, user_id: int) -> List[UserAction]:
@@ -190,7 +214,7 @@ class UserActionsFabric:
             raise DataBaseError()
 
         rows = cursor.fetchall()
-        if(rows == []):
+        if (rows == []):
             raise NotFoundError("Actions not found")
 
         return list(map(lambda x: UserAction(**x), rows))

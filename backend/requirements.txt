@@ -34,5 +34,14 @@ typing-extensions==4.12.2
 uvicorn==0.32.1
     # via -r requirements.in
 
-# custom
+# next is custom packages
+# pretty printing objects
 devtools
+
+# jwt and passwords
+python-jose
+bcrypt
+passlib[bcrypt]
+
+# for async db interaction
+aiopg
