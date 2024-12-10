@@ -7,5 +7,5 @@ def get_password_hash(password: str) -> str:
 
 
 def verity_password(plain_password: str, hashed_password: str) -> bool:
-    print("plain pass: ", plain_password,"\nhased pass: ", hashed_password)
+    print("plain pass: ", plain_password,"\nhashed pass: ", hashed_password)
     return pwd_context.verify(plain_password, hashed_password)

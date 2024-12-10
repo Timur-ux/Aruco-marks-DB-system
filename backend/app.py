@@ -1,16 +1,18 @@
 #!venv/bin/python
 import time
 from typing import Optional
-from fastapi import FastAPI, Response
+from fastapi import Depends, FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.types import ExceptionHandler
 
+from src.service.jwt import get_current_user
 from src.models.request import AddNewMarkRequest, AuthRequest, ChangeMarkDataRequest, DeleteMarkRequest, DeleteUserRequest
 from src.models.message import ErrorMessage
+from src.models.user import User
 from src.core.errors import BackendError
-import src.db.sessionManager as sm
+from src.db.sessionManager import sm as sessionManager
 from src.service.requests import RequestProccessor
-from src.core.config import DB_CONFIG
 
 LOG = True
 
@@ -23,6 +25,13 @@ app = FastAPI(docs_url="/api/docs", redoc_url="/api/redoc")
 # origins from where backend can accept requests
 origins = [
         "http://localhost:8080",
+        "http://127.0.0.1:8080",
+        "http://localhost:5000",
+        "http://127.0.0.1:5000",
+        "https://localhost:8080",
+        "https://127.0.0.1:8080",
+        "https://localhost:5000",
+        "https://127.0.0.1:5000",
         ]
 
 app.add_middleware(
@@ -34,7 +43,6 @@ app.add_middleware(
         allow_headers=['*']
         )
 
-sessionManager = sm.SessionManager(DB_CONFIG)
 requestProccessor = RequestProccessor(sessionManager)
 
 def handleRequest(requestFunc, *args, **kwargs):
@@ -48,10 +56,6 @@ def handleRequest(requestFunc, *args, **kwargs):
     except BackendError as e:
         print("Backend error: ", e.args)
         message: ErrorMessage = e.args[0]
-        return JSONResponse(content=message.text, status_code=message.code)
-    except Exception as e:
-        print("Undefined exception: ", e.args, "\nSkipping...")
-        message = ErrorMessage(text="Undefined error", code=404)
         return JSONResponse(content=message.text, status_code=message.code)
 
     return responseData.model_dump()
@@ -69,59 +73,57 @@ def index():
 def auth(response: Response, user: AuthRequest):
     data = handleRequest(RequestProccessor.auth, requestProccessor, user.access, user.login, user.password, response)
     pprint(response)
-    response.set_cookie(key="some", value="none")
     return data
 
 @app.post('/api/register')
-def register(user: AuthRequest):
-    return handleRequest(RequestProccessor.register, requestProccessor, user.access, user.login, user.password)
+def register(userData: AuthRequest):
+    return handleRequest(RequestProccessor.register, requestProccessor, userData.access, userData.login, userData.password)
 
 @app.get('/api/marks')
-def getMarks(mark_id: Optional[int] = None):
+def getMarks(mark_id: Optional[int] = None, user: User = Depends(get_current_user)):
     if(mark_id is None):
-        return getMarksList()
+        return getMarksList(user)
     else:
-        return getMarkData(mark_id)
+        return getMarkData(mark_id, user)
 
-def getMarksList():
-    return handleRequest(RequestProccessor.getMarksList, requestProccessor,)
+def getMarksList(user: User = Depends(get_current_user)):
+    return handleRequest(RequestProccessor.getMarksList, requestProccessor, user)
 
-def getMarkData(mark_id: int):
-    return handleRequest(RequestProccessor.getMarkData, requestProccessor, mark_id)
+def getMarkData(mark_id: int, user: User = Depends(get_current_user)):
+    return handleRequest(RequestProccessor.getMarkData, requestProccessor, mark_id, user)
 
 @app.get('/api/requests')
-def getListOfRequests(access:str):
-    time.sleep(5)
-    return handleRequest(RequestProccessor.getRequestsList, requestProccessor, access)
+def getListOfRequests(access:str, user: User = Depends(get_current_user)):
+    return handleRequest(RequestProccessor.getRequestsList, requestProccessor, access, user)
 
 @app.post("/api/marks")
-def changeMarkData(request: ChangeMarkDataRequest):
-    return handleRequest(RequestProccessor.changeMarkData, requestProccessor, request.mark_id, request.parameters)
+def changeMarkData(request: ChangeMarkDataRequest, user: User = Depends(get_current_user)):
+    return handleRequest(RequestProccessor.changeMarkData, requestProccessor, request.mark_id, request.parameters, user)
 
 @app.put("/api/marks")
-def addNewMark(request: AddNewMarkRequest):
-    return handleRequest(RequestProccessor.addNewMark, requestProccessor, request)
+def addNewMark(request: AddNewMarkRequest, user: User = Depends(get_current_user)):
+    return handleRequest(RequestProccessor.addNewMark, requestProccessor, request, user)
 
 @app.delete("/api/marks")
-def deleteMark(request: DeleteMarkRequest):
-    return handleRequest(RequestProccessor.deleteMark, requestProccessor, request)
+def deleteMark(request: DeleteMarkRequest, user: User = Depends(get_current_user)):
+    return handleRequest(RequestProccessor.deleteMark, requestProccessor, request, user)
 
 @app.get("/api/users")
-def getUsers(user_id: Optional[int] = None):
+def getUsers(user_id: Optional[int] = None, user: User = Depends(get_current_user)):
     if(user_id is None):
-        return handleRequest(RequestProccessor.getUsersInfo, requestProccessor)
-    return handleRequest(RequestProccessor.getUserInfo, requestProccessor, user_id)
+        return handleRequest(RequestProccessor.getUsersInfo, requestProccessor, user)
+    return handleRequest(RequestProccessor.getUserInfo, requestProccessor, user_id, user)
 
 @app.delete("/api/users")
-def deleteUser(request: DeleteUserRequest):
-    return handleRequest(RequestProccessor.deleteUser, requestProccessor, request.user_id)
+def deleteUser(request: DeleteUserRequest, user: User = Depends(get_current_user)):
+    return handleRequest(RequestProccessor.deleteUser, requestProccessor, request.user_id, user)
 
 @app.get("/api/user_actions")
-def getUsersActions(user_id: Optional[int] = None):
+def getUsersActions(user_id: Optional[int] = None, user: User = Depends(get_current_user)):
     if(user_id is None):
-        return handleRequest(RequestProccessor.getUsersActions, requestProccessor)
-    return handleRequest(RequestProccessor.getUserActions, requestProccessor, user_id)
+        return handleRequest(RequestProccessor.getUsersActions, requestProccessor, user)
+    return handleRequest(RequestProccessor.getUserActions, requestProccessor, user_id, user)
 
 @app.put("/api/users")
-def addUser(request: AuthRequest):
-    return handleRequest(RequestProccessor.addUser, requestProccessor, request.access, request.login, request.password)
+def addUser(request: AuthRequest, user: User = Depends(get_current_user)):
+    return handleRequest(RequestProccessor.addUser, requestProccessor, request.access, request.login, request.password, user)

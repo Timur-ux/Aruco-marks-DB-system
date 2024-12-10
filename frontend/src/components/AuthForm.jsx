@@ -28,8 +28,6 @@ const AuthForm = () => {
 
     processAuth(login, password).then((response) => {
       console.log("Status: ", response.status, response.statusText);
-      dispatch(setLogin(""));
-      dispatch(setPassword(""));
 
       if (response.status == 200) {
         dispatch(setAccess(access));

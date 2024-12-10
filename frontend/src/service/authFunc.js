@@ -7,7 +7,7 @@ export const authFunc = access =>
         access: access.toLowerCase(),
         login: login,
         password: await getSHA256Hash(password),
-      })
+      }, {withCredentials: true})
       return response;
     };
 
