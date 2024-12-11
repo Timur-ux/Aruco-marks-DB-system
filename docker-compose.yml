@@ -7,14 +7,6 @@ services:
     networks:
       - frontend
   
-  # frontend: # for develop(doesn't work)
-  #   build:
-  #     dockerfile: ./frontend/dev.Dockerfile
-  #   ports:
-  #     - 8080:3000
-  #   volumes:
-  #     - ./frontend/:/app
-
   backend:
     build:
       context: ./backend/
@@ -23,6 +15,8 @@ services:
     networks:
       - frontend
       - backend
+    volumes:
+      - ./db/dumps/:/dumps # for database dumping
 
   postgres:
     image: postgres:13.3
@@ -35,6 +29,7 @@ services:
         - backend
     volumes:
       - ./db/:/docker-entrypoint-initdb.d
+      - ./db/dumps/:/dumps
       - ./db/storage/:/var/lib/postgresql/data/pgdata
 
 

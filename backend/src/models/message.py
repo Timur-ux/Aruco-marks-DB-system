@@ -44,3 +44,7 @@ class StatusMessage(Message):
 
     def __init__(self, status: Status, message=""):
         super().__init__(type="Tabled", data=TabledMessage(columns=["Status", "Info"], rows=[self.StatusData(status=status, info=message)]))
+
+class DumpListMessage(Message):
+    def __init__(self, dumps: List[str]):
+        super().__init__(type="DumpsList", data=)

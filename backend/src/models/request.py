@@ -43,3 +43,12 @@ class DeleteMarkRequest(BaseModel):
 
 class DeleteUserRequest(BaseModel):
     user_id: int
+
+class DumpDBRequest(BaseModel):
+    suffix: str
+
+class GetDBDumpsRequest(BaseModel):
+    pass
+
+class RestoreDumpRequest(BaseModel):
+    dump_id: int

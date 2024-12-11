@@ -125,6 +125,32 @@
           "type": "string(sha256)"
         }
       ]
+    },
+    {
+      "name": "Сделать архивную копию базы данных",
+      "type": "POST",
+      "uri": "/api/db/dump",
+      "fields": [
+        {
+          "name": "suffix",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "Посмотреть все архивные копии",
+      "type": "GET",
+      "uri": "/api/db/dumps",
+      "fields": []
+    },
+    {
+      "name": "Восстановить архивную копию",
+      "type": "POST",
+      "uri": "/api/db/dumps",
+      "fields": [{
+        "name": "dump_id",
+        "type": "int"
+      }]
     }
   ]
 }

@@ -1,5 +1,4 @@
 from contextlib import closing
-from os import access
 from psycopg2.extensions import AsIs
 from psycopg2.extras import DictCursor
 from psycopg2.sql import SQL, Placeholder, Identifier, Composed
@@ -8,7 +7,8 @@ import json
 
 from src.models.user import User
 from src.models.token import TokenData
-from src.models.request import AddNewMarkRequest, DeleteMarkRequest, Request
+from src.models.request import AddNewMarkRequest, DeleteMarkRequest, DumpDBRequest, GetDBDumpsRequest, Request, RestoreDumpRequest
+from src.models.response import DumpsListResponse
 from src.models.message import AuthMessage, Message, RequestsListMessage, Status, StatusMessage, TabledMessage
 from src.core.errors import AlreadyExistError, DataBaseError, NotFoundError
 from src.db.fabric import PrivilegeFabric, UserActionsFabric, AccessFabric, markFabric, UserFabric, printError
@@ -20,6 +20,7 @@ from src.service.jwt import create_access_token
 from datetime import datetime
 
 import src.db.sessionManager as sm
+from src.service.backups import default_backuper
 
 from devtools import pprint
 
@@ -384,3 +385,48 @@ class RequestProccessor:
                     raise e
 
         return self.register(access, login, password, user)
+
+    def createDBDump(self, data: DumpDBRequest, user: User):
+        with closing(self.sessionManager.createSession()) as session:
+            with session.cursor(cursor_factory=DictCursor) as cursor:
+                session.autocommit = True
+                if not self.validate_access(cursor, user, "administrator"):
+                    raise HTTPException(
+                        status.HTTP_403_FORBIDDEN, "Access denied")
+                try:
+                    self.onAction(
+                        cursor, f"dump database by {user.login}", user.id)
+                    default_backuper.dump(data.suffix)
+                except Exception as e:
+                    print("ERROR: Dump db:", e.args)
+                    raise e
+
+    def getDBDumps(self, data: GetDBDumpsRequest, user: User):
+        with closing(self.sessionManager.createSession()) as session:
+            with session.cursor(cursor_factory=DictCursor) as cursor:
+                session.autocommit = True
+                if not self.validate_access(cursor, user, "administrator"):
+                    raise HTTPException(
+                        status.HTTP_403_FORBIDDEN, "Access denied")
+                try:
+                    self.onAction(
+                        cursor, f"get db dumps list by {user.login}", user.id)
+                    return DumpsListResponse(dumps=default_backuper.get_dumps())
+                except Exception as e:
+                    print("ERROR: get db dumps:", e.args)
+                    raise e
+
+    def restoreDBDums(self, data: RestoreDumpRequest, user: User):
+        with closing(self.sessionManager.createSession()) as session:
+            with session.cursor(cursor_factory=DictCursor) as cursor:
+                session.autocommit = True
+                if not self.validate_access(cursor, user, "administrator"):
+                    raise HTTPException(
+                        status.HTTP_403_FORBIDDEN, "Access denied")
+                try:
+                    self.onAction(
+                        cursor, f"dump database by {user.login}", user.id)
+                    default_backuper.load(default_backuper.get_dumps()[data.dump_id])
+                except Exception as e:
+                    print("ERROR: restore db dump:", e.args)
+                    raise e
