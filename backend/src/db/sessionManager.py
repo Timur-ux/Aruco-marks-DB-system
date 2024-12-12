@@ -6,6 +6,6 @@ class SessionManager:
         self.config = config
 
     def createSession(self):
-        return psycopg2.connect(**self.config)
+        return psycopg2.connect(dbname=self.config["dbname"], user=self.config["user"], password=self.config["password"], host=self.config["host"])
 
 sm = SessionManager(DB_CONFIG)

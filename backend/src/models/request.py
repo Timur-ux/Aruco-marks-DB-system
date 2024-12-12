@@ -47,8 +47,5 @@ class DeleteUserRequest(BaseModel):
 class DumpDBRequest(BaseModel):
     suffix: str
 
-class GetDBDumpsRequest(BaseModel):
-    pass
-
 class RestoreDumpRequest(BaseModel):
     dump_id: int

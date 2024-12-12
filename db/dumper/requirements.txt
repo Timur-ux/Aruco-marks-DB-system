@@ -16,8 +16,6 @@ h11==0.14.0
     # via uvicorn
 idna==3.10
     # via anyio
-psycopg2-binary==2.9.10
-    # via -r requirements.in
 pydantic==2.10.1
     # via fastapi
 pydantic-core==2.27.1
@@ -33,18 +31,3 @@ typing-extensions==4.12.2
     #   pydantic-core
 uvicorn==0.32.1
     # via -r requirements.in
-
-# next is custom packages
-# pretty printing objects
-devtools
-
-# jwt and passwords
-python-jose
-bcrypt
-passlib[bcrypt]
-
-# for async db interaction
-aiopg
-
-# for requests to dumper
-requests

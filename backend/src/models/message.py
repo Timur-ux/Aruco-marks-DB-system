@@ -3,10 +3,11 @@ from pydantic import BaseModel, SerializeAsAny
 from typing import List
 from src.models.request import Request
 
+
 class Message(BaseModel):
     type: str
     data: SerializeAsAny[BaseModel]
-    
+
 
 class ErrorMessage(BaseModel):
     text: str
@@ -19,6 +20,7 @@ class DataMessage(BaseModel):
 
 class AuthMessage(DataMessage):
     pass
+
 
 class RequestsListMessage(BaseModel):
     requests: List[Request]
@@ -43,8 +45,18 @@ class StatusMessage(Message):
         info: str
 
     def __init__(self, status: Status, message=""):
-        super().__init__(type="Tabled", data=TabledMessage(columns=["Status", "Info"], rows=[self.StatusData(status=status, info=message)]))
+        super().__init__(type="Tabled", data=TabledMessage(columns=[
+            "Status", "Info"], rows=[self.StatusData(status=status, info=message)]))
 
-class DumpListMessage(Message):
+
+class DumpsListMessage(TabledMessage):
+    class DumpListItem(BaseModel):
+        dump_id: int
+        dump_name: str
+
     def __init__(self, dumps: List[str]):
-        super().__init__(type="DumpsList", data=)
+        columns = ["dump_id", "dump_name"]
+        rows = []
+        for i, name in enumerate(dumps):
+            rows.append(self.DumpListItem(dump_id=i, dump_name=name))
+        super().__init__(columns=columns, rows=rows)

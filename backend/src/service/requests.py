@@ -3,13 +3,13 @@ from psycopg2.extensions import AsIs
 from psycopg2.extras import DictCursor
 from psycopg2.sql import SQL, Placeholder, Identifier, Composed
 from fastapi import HTTPException, status, Response
+import requests
 import json
 
 from src.models.user import User
 from src.models.token import TokenData
-from src.models.request import AddNewMarkRequest, DeleteMarkRequest, DumpDBRequest, GetDBDumpsRequest, Request, RestoreDumpRequest
-from src.models.response import DumpsListResponse
-from src.models.message import AuthMessage, Message, RequestsListMessage, Status, StatusMessage, TabledMessage
+from src.models.request import AddNewMarkRequest, DeleteMarkRequest, DumpDBRequest, Request, RestoreDumpRequest
+from src.models.message import AuthMessage, Message, RequestsListMessage, Status, StatusMessage, TabledMessage, DumpsListMessage
 from src.core.errors import AlreadyExistError, DataBaseError, NotFoundError
 from src.db.fabric import PrivilegeFabric, UserActionsFabric, AccessFabric, markFabric, UserFabric, printError
 from typing import List, Dict
@@ -397,11 +397,12 @@ class RequestProccessor:
                     self.onAction(
                         cursor, f"dump database by {user.login}", user.id)
                     default_backuper.dump(data.suffix)
+                    return StatusMessage(status=Status.Success, message="dump has created")
                 except Exception as e:
                     print("ERROR: Dump db:", e.args)
-                    raise e
+                    return StatusMessage(status=Status.Failed, message="dump has not created")
 
-    def getDBDumps(self, data: GetDBDumpsRequest, user: User):
+    def getDBDumps(self, user: User):
         with closing(self.sessionManager.createSession()) as session:
             with session.cursor(cursor_factory=DictCursor) as cursor:
                 session.autocommit = True
@@ -411,7 +412,7 @@ class RequestProccessor:
                 try:
                     self.onAction(
                         cursor, f"get db dumps list by {user.login}", user.id)
-                    return DumpsListResponse(dumps=default_backuper.get_dumps())
+                    return DumpsListMessage(dumps=default_backuper.get_dumps()).asMessage()
                 except Exception as e:
                     print("ERROR: get db dumps:", e.args)
                     raise e
@@ -425,8 +426,17 @@ class RequestProccessor:
                         status.HTTP_403_FORBIDDEN, "Access denied")
                 try:
                     self.onAction(
-                        cursor, f"dump database by {user.login}", user.id)
-                    default_backuper.load(default_backuper.get_dumps()[data.dump_id])
+                        cursor, f"dump database with id {data.dump_id} by {user.login}", user.id)
+                    dumps = default_backuper.get_dumps()
+                    if data.dump_id in range(len(dumps)):
+                        default_backuper.load(dumps[data.dump_id])
+                        self.onAction(
+                            cursor, f"dump database with id {data.dump_id} by {user.login}", user.id)
+                        return StatusMessage(status=Status.Success, message=f"dump: {dumps[data.dump_id]} has restored")
+                    else:
+                        self.onAction(
+                                cursor, f"Failed[incorrect dump_id]: dump database not created", user.id)
+                        return StatusMessage(status=Status.Failed, message=f"Incorrect dump_id")
                 except Exception as e:
                     print("ERROR: restore db dump:", e.args)
                     raise e

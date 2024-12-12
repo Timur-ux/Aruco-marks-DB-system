@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from src.service.jwt import get_current_user
-from src.models.request import AddNewMarkRequest, AuthRequest, ChangeMarkDataRequest, DeleteMarkRequest, DeleteUserRequest, DumpDBRequest, GetDBDumpsRequest, RestoreDumpRequest
+from src.models.request import AddNewMarkRequest, AuthRequest, ChangeMarkDataRequest, DeleteMarkRequest, DeleteUserRequest, DumpDBRequest, RestoreDumpRequest
 from src.models.message import ErrorMessage
 from src.models.user import User
 from src.core.errors import BackendError
@@ -130,10 +130,10 @@ def addUser(request: AuthRequest, user: User = Depends(get_current_user)):
 def dumpDB(request: DumpDBRequest, user: User = Depends(get_current_user)):
     return handleRequest(RequestProccessor.createDBDump, requestProccessor, request, user)
 
-@app.post("/api/db/dump")
-def getDumps(request: GetDBDumpsRequest, user: User = Depends(get_current_user)):
-    return handleRequest(RequestProccessor.getDBDumps, requestProccessor, request, user)
+@app.get("/api/db/dumps")
+def getDumps(user: User = Depends(get_current_user)):
+    return handleRequest(RequestProccessor.getDBDumps, requestProccessor, user)
 
-@app.post("/api/db/dump")
+@app.post("/api/db/dumps")
 def restoreDump(request: RestoreDumpRequest, user: User = Depends(get_current_user)):
     return handleRequest(RequestProccessor.restoreDBDums, requestProccessor, request, user)
