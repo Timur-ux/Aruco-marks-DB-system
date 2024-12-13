@@ -12,6 +12,11 @@ services:
       context: ./backend/
     ports:
       - 5000:8000
+    environment:
+      PGHOST: "postgres"
+      PGUSER: "Raison"
+      PGDATABASE: "ArucoService"
+      PGPASSWORD: "qwerty"
     networks:
       - frontend
       - backend

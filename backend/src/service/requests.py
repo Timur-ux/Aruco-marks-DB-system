@@ -23,6 +23,7 @@ import src.db.sessionManager as sm
 from src.service.backups import default_backuper
 
 from devtools import pprint
+from fastapi import status
 
 
 class RequestProccessor:
@@ -85,7 +86,7 @@ class RequestProccessor:
                             status.HTTP_403_FORBIDDEN, "Access denied")
                 try:
                     user = UserFabric.byData(cursor, access, login, password)
-                except NotFoundError:
+                except Exception:
                     accessObj = AccessFabric.byName(cursor, access)
                     try:
                         cursor.execute(
@@ -309,7 +310,7 @@ class RequestProccessor:
                         status.HTTP_403_FORBIDDEN, "Access denied")
                 try:
                     user = UserFabric.byId(cursor, user_id)
-                except NotFoundError:
+                except Exception:
                     return StatusMessage(status=Status.Failed, message="No one user is found")
 
                 columns = list(user.model_dump().keys())
@@ -324,7 +325,7 @@ class RequestProccessor:
                         status.HTTP_403_FORBIDDEN, "Access denied")
                 try:
                     UserFabric.byId(cursor, user_id)
-                except NotFoundError:
+                except Exception:
                     return StatusMessage(status=Status.Failed, message="No one user is found")
 
                 try:
@@ -346,7 +347,7 @@ class RequestProccessor:
                         status.HTTP_403_FORBIDDEN, "Access denied")
                 try:
                     actions: List = UserActionsFabric.allActions(cursor)
-                except NotFoundError as e:
+                except Exception as e:
                     return StatusMessage(status=Status.Failed, message=e.args[0])
 
                 columns = list(actions[0].model_dump().keys())
@@ -362,7 +363,7 @@ class RequestProccessor:
                         status.HTTP_403_FORBIDDEN, "Access denied")
                 try:
                     actions: List = UserActionsFabric.byId(cursor, user_id)
-                except NotFoundError:
+                except Exception:
                     return StatusMessage(status=Status.Failed, message="No such user_id found")
 
                 columns = list(actions[0].model_dump().keys())
@@ -412,7 +413,8 @@ class RequestProccessor:
                 try:
                     self.onAction(
                         cursor, f"get db dumps list by {user.login}", user.id)
-                    return DumpsListMessage(dumps=default_backuper.get_dumps()).asMessage()
+                    dumps = default_backuper.get_dumps()
+                    return DumpsListMessage(dumps=dumps).asMessage()
                 except Exception as e:
                     print("ERROR: get db dumps:", e.args)
                     raise e

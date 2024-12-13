@@ -15,6 +15,7 @@ WORKDIR /code
 COPY --from=builder /venv/ /venv/ 
 
 ENV PATH=/venv/bin:$PATH
+RUN apt update && apt install -y postgresql-client
 
 COPY . .
 
