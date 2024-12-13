@@ -1,0 +1,15 @@
+
+> create-intro@0.1.0 build
+> react-scripts build
+
+Creating an optimized production build...
+Failed to compile.
+
+Module not found: Error: Can't resolve './views/NativeStackView' in '/home/raison/git/Aruco-marks-DB-system/frontend/node_modules/@react-navigation/native-stack/lib/module'
+Did you mean 'NativeStackView.js'?
+BREAKING CHANGE: The request './views/NativeStackView' failed to resolve only because it was resolved as fully specified
+(probably because the origin is strict EcmaScript Module, e. g. a module with javascript mimetype, a '*.mjs' file, or a '*.js' file where the package.json contains '"type": "module"').
+The extension in the request is mandatory for it to be fully specified.
+Add the extension to the request.
+
+

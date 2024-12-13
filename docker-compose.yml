@@ -1,0 +1,45 @@
+services:
+  frontend: # for deploy
+    build:
+      context: ./frontend/
+    ports:
+      - 8080:80
+    networks:
+      - frontend
+  
+  backend:
+    build:
+      context: ./backend/
+    ports:
+      - 5000:8000
+    environment:
+      PGHOST: "postgres"
+      PGUSER: "Raison"
+      PGDATABASE: "ArucoService"
+      PGPASSWORD: "qwerty"
+    networks:
+      - frontend
+      - backend
+    volumes:
+      - ./db/dumps/:/dumps # for database dumping
+
+  postgres:
+    image: postgres:13.3
+    environment:
+      POSTGRES_DB: "ArucoService"
+      POSTGRES_USER: "Raison"
+      POSTGRES_PASSWORD: "qwerty"
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    networks:
+        - backend
+    volumes:
+      - ./db/:/docker-entrypoint-initdb.d
+      - ./db/dumps/:/dumps
+      - ./db/storage/:/var/lib/postgresql/data/pgdata
+
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
