@@ -31,7 +31,7 @@ def get_access_token(request: Request) -> str:
     return token
 
 
-def get_current_user(token: str = Depends(get_access_token)) -> User | None:
+async def get_current_user(token: str = Depends(get_access_token)) -> User | None:
     try:
         payload = jwt.decode(token, SECRET, ALGORITHM)
     except Exception:
@@ -42,6 +42,6 @@ def get_current_user(token: str = Depends(get_access_token)) -> User | None:
     if userData.expired.timestamp() < datetime.now().timestamp():
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Token is expired")
 
-    with sm.createSession() as session:
-        with session.cursor(cursor_factory=DictCursor) as cursor:
-            return UserFabric.byId(cursor, userData.data["user_id"])
+    async with await sm.createSession() as session:
+        async with session.cursor(cursor_factory=DictCursor) as cursor:
+            return await UserFabric.byId(cursor, userData.data["user_id"])

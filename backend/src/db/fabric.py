@@ -15,14 +15,16 @@ from typing import List
 
 from devtools import pprint
 
+import asyncio
+import aiopg
 
 def printError(table: str, error: Exception):
     print(f"Error while requesting to {table}, error text: {error.args}")
 
 
-def processExecute(cursor: DictCursor, sql, table="undefined", *args):
+async def processExecute(cursor: DictCursor, sql, table="undefined", *args):
     try:
-        cursor.execute(sql, args)
+        await cursor.execute(sql, args)
     except Exception as e:
         printError(table, e)
         raise DataBaseError()
@@ -36,24 +38,24 @@ class PrivilegeFabric:
     table = "privilege"
 
     @staticmethod
-    def fromIds(cursor: DictCursor, ids: List[int]) -> List[Privilege]:
+    async def fromIds(cursor: DictCursor, ids: List[int]) -> List[Privilege]:
         print("Required privileges: ", ids)
-        cursor = processExecute(
+        cursor = await processExecute(
             cursor, PrivilegeFabric.idsSql, PrivilegeFabric.table, tuple(ids))
         privileges: List[Privilege] = []
-        for row in cursor.fetchall():
+        for row in await cursor.fetchall():
             privileges.append(Privilege(**row))
 
         return privileges
 
     @staticmethod
-    def fromAccess(cursor: DictCursor, access: Access) -> List[Privilege]:
+    async def fromAccess(cursor: DictCursor, access: Access) -> List[Privilege]:
         print("Required privileges for access: ", access.name)
-        cursor = processExecute(
+        cursor = await processExecute(
             cursor, PrivilegeFabric.accessSql, PrivilegeFabric.table, access.id)
         binds: List[Access_to_privilege] = [
-            Access_to_privilege(**x) for x in cursor.fetchall()]
-        privileges = PrivilegeFabric.fromIds(
+            Access_to_privilege(**x) for x in await cursor.fetchall()]
+        privileges = await PrivilegeFabric.fromIds(
             cursor, [x.privilege_id for x in binds])
 
         print("Privileges: ")
@@ -67,10 +69,10 @@ class AccessFabric:
     byIdSql = "select * from access where id = %s"
 
     @staticmethod
-    def byId(cursor:DictCursor, id:int) -> Access:
+    async def byId(cursor:DictCursor, id:int) -> Access:
         try:
-            cursor.execute(AccessFabric.byIdSql, (id,))
-            accessData = cursor.fetchone()
+            await cursor.execute(AccessFabric.byIdSql, (id,))
+            accessData = await cursor.fetchone()
             if accessData is None:
                 raise HTTPException(status.HTTP_404_NOT_FOUND, f"No access with such id: {id}" )
         except Exception as e:
@@ -80,10 +82,10 @@ class AccessFabric:
         return Access(**accessData)
 
     @staticmethod
-    def byName(cursor:DictCursor, access_: str) -> Access:
+    async def byName(cursor:DictCursor, access_: str) -> Access:
         try:
-            cursor.execute("select * from access where name = %s;", (access_,))
-            access = cursor.fetchone()
+            await cursor.execute("select * from access where name = %s;", (access_,))
+            access = await cursor.fetchone()
 
             if (access is None):
                 raise HTTPException(status.HTTP_404_NOT_FOUND, "Invalid access")
@@ -102,13 +104,13 @@ class UserFabric:
     authSql = "select * from users where login = %s"
 
     @staticmethod
-    def auth(cursor: DictCursor, login: str, plain_password: str) -> User | None:
+    async def auth(cursor: DictCursor, login: str, plain_password: str) -> User | None:
         try:
-            cursor.execute(UserFabric.authSql, (login,))
+            await cursor.execute(UserFabric.authSql, (login,))
         except Exception as e:
             printError("users", e)
             return None
-        userData = cursor.fetchone()
+        userData = await cursor.fetchone()
         if userData is None:
             return None
         user = User(**userData)
@@ -117,16 +119,15 @@ class UserFabric:
         return user
 
     @staticmethod
-    def byData(cursor: DictCursor, access_: str, login: str, password: str) -> User:
-        access = AccessFabric.byName(cursor, access_)
-        # TODO: Some logic to validate access and login and password
+    async def byData(cursor: DictCursor, access_: str, login: str, password: str) -> User:
+        access = await AccessFabric.byName(cursor, access_)
         try:
-            cursor.execute(UserFabric.byDataSql, (login, password))
+            await cursor.execute(UserFabric.byDataSql, (login, password))
         except Exception as e:
             printError("users", e)
             raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR) 
 
-        user = cursor.fetchone()
+        user = await cursor.fetchone()
         if (user is None):
             raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid user login and/or password")
 
@@ -137,53 +138,52 @@ class UserFabric:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Access denied")
 
     @staticmethod
-    def byId(cursor: DictCursor, user_id: int) -> User:
-        # TODO: Some logic to validate access and login and password
+    async def byId(cursor: DictCursor, user_id: int) -> User:
         try:
-            cursor.execute(UserFabric.byIdSql, (user_id, ))
+            await cursor.execute(UserFabric.byIdSql, (user_id, ))
         except Exception as e:
             printError("users", e)
             raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR) 
 
-        user = cursor.fetchone()
+        user = await cursor.fetchone()
         if (user is None):
             raise HTTPException(status.HTTP_404_NOT_FOUND, "No users found with this id")
 
         return User(**user)
 
     @staticmethod
-    def allUsers(cursor: DictCursor) -> List[User]:
+    async def allUsers(cursor: DictCursor) -> List[User]:
         try:
-            cursor.execute(UserFabric.totalSql)
+            await cursor.execute(UserFabric.totalSql)
         except Exception as e:
             printError("users", e)
             raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR) 
 
-        return list(map(lambda x: User(**x), cursor.fetchall()))
+        return list(map(lambda x: User(**x), await cursor.fetchall()))
 
 
-def locationFabric(cursor: DictCursor, id: int):
+async def locationFabric(cursor: DictCursor, id: int):
     try:
-        cursor.execute("select * from locations where id = %s", (id, ))
+        await cursor.execute("select * from locations where id = %s", (id, ))
     except Exception as e:
         printError("locations", e)
         raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR) 
 
-    row = cursor.fetchone()
+    row = await cursor.fetchone()
     if (row is None):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such location")
 
     return Location(**row)
 
 
-def mark_typeFabric(cursor: DictCursor, id: int):
+async def mark_typeFabric(cursor: DictCursor, id: int):
     try:
-        cursor.execute("select * from mark_types where id = %s", (id, ))
+        await cursor.execute("select * from mark_types where id = %s", (id, ))
     except Exception as e:
         printError("mark_types", e)
         raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR) 
 
-    row = cursor.fetchone()
+    row = await cursor.fetchone()
     if (row is None):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such mark_type")
 
@@ -191,14 +191,14 @@ def mark_typeFabric(cursor: DictCursor, id: int):
     return MarkType(**row)
 
 
-def markFabric(cursor: DictCursor, id: int):
+async def markFabric(cursor: DictCursor, id: int):
     try:
-        cursor.execute("select * from marks where id = %s", (id, ))
+        await cursor.execute("select * from marks where id = %s", (id, ))
     except Exception as e:
         printError("marks", e)
         raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR) 
 
-    row = cursor.fetchone()
+    row = await cursor.fetchone()
     if (row is None):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No such mark_type")
 
@@ -211,27 +211,27 @@ class UserActionsFabric:
     byIdSql = "select * from user_actions where user_id=%s order by time desc;"
 
     @staticmethod
-    def allActions(cursor: DictCursor) -> List[UserAction]:
+    async def allActions(cursor: DictCursor) -> List[UserAction]:
         try:
-            cursor.execute(UserActionsFabric.allActionsSql)
+            await cursor.execute(UserActionsFabric.allActionsSql)
         except Exception as e:
             printError("user_actions", e)
             raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR) 
-        rows = cursor.fetchall()
+        rows = await cursor.fetchall()
         if (rows == []):
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Actions not found")
 
         return list(map(lambda x: UserAction(**x), rows))
 
     @staticmethod
-    def byId(cursor: DictCursor, user_id: int) -> List[UserAction]:
+    async def byId(cursor: DictCursor, user_id: int) -> List[UserAction]:
         try:
-            cursor.execute(UserActionsFabric.byIdSql, (user_id, ))
+            await cursor.execute(UserActionsFabric.byIdSql, (user_id, ))
         except Exception as e:
             printError("user_actions", e)
             raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR) 
 
-        rows = cursor.fetchall()
+        rows = await cursor.fetchall()
         if (rows == []):
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Actions not found")
 

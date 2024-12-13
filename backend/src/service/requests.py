@@ -1,16 +1,15 @@
-from contextlib import closing
+from contextlib import aclosing
 from psycopg2.extensions import AsIs
 from psycopg2.extras import DictCursor
 from psycopg2.sql import SQL, Placeholder, Identifier, Composed
 from fastapi import HTTPException, status, Response
-import requests
 import json
 
 from src.models.user import User
 from src.models.token import TokenData
 from src.models.request import AddNewMarkRequest, DeleteMarkRequest, DumpDBRequest, Request, RestoreDumpRequest
 from src.models.message import AuthMessage, Message, RequestsListMessage, Status, StatusMessage, TabledMessage, DumpsListMessage
-from src.core.errors import AlreadyExistError, DataBaseError, NotFoundError
+from src.core.errors import AlreadyExistError, DataBaseError
 from src.db.fabric import PrivilegeFabric, UserActionsFabric, AccessFabric, markFabric, UserFabric, printError
 from typing import List, Dict
 
@@ -25,33 +24,35 @@ from src.service.backups import default_backuper
 from devtools import pprint
 from fastapi import status
 
+import asyncio
+import aiopg
+
 
 class RequestProccessor:
     def __init__(self, sessionManager: sm.SessionManager):
         self.sessionManager = sessionManager
 
-    def validate_access(self, cursor: DictCursor, user: User, minimal_access: str) -> bool:
-        user_access = AccessFabric.byId(cursor, user.access_level)
-        required_access = AccessFabric.byName(cursor, minimal_access)
+    async def validate_access(self, cursor: DictCursor, user: User, minimal_access: str) -> bool:
+        user_access = await AccessFabric.byId(cursor, user.access_level)
+        required_access = await AccessFabric.byName(cursor, minimal_access)
         print("User_access: ", user_access.id,
               "Required: ", required_access.id)
 
         return user_access.id >= required_access.id
 
-    def onAction(self, cursor: DictCursor, action: str, user_id: int = -1, time: datetime = datetime.now()) -> None:
+    async def onAction(self, cursor: DictCursor, action: str, user_id: int = -1, time: datetime = datetime.now()) -> None:
         try:
-            cursor.execute(
+            await cursor.execute(
                 "insert into user_actions(action, user_id, time) values (%s, %s, %s)", (action, user_id, time))
         except Exception as e:
             printError("user_actions", e)
             raise DataBaseError()
 
-    def auth(self,  access_: str, login: str, password: str, response: Response) -> Message:
-        with closing(self.sessionManager.createSession()) as session:
-            with session.cursor(cursor_factory=DictCursor) as cursor:
-                session.autocommit = True
-                user = UserFabric.auth(cursor, login, password)
-                access = AccessFabric.byName(cursor, access_)
+    async def auth(self,  access_: str, login: str, password: str, response: Response) -> Message:
+        async with await self.sessionManager.createSession() as session:
+            async with session.cursor(cursor_factory=DictCursor) as cursor:
+                user = await UserFabric.auth(cursor, login, password)
+                access = await AccessFabric.byName(cursor, access_)
                 if user is None:
                     raise HTTPException(
                         status.HTTP_401_UNAUTHORIZED, detail="Incorrect login or password")
@@ -60,7 +61,6 @@ class RequestProccessor:
                         status.HTTP_401_UNAUTHORIZED, detail="Incorrect access")
 
                 try:
-
                     token = create_access_token(
                         TokenData(user_id=user.id).model_dump())
                 except Exception as e:
@@ -71,51 +71,49 @@ class RequestProccessor:
                 print("Generated token: ", token)
                 response.set_cookie(key="access_token",
                                     value=token, httponly=True)
-                self.onAction(cursor, "auth", user.id)
+                await self.onAction(cursor, "auth", user.id)
                 return Message(type="Authentication", data=AuthMessage(
                     data=f"{user.login} is logged in successfully",
                 ))
 
-    def register(self, access: str, login: str, password: str, user: User | None) -> Message:
-        with closing(self.sessionManager.createSession()) as session:
-            with session.cursor(cursor_factory=DictCursor) as cursor:
-                session.autocommit = True
+    async def register(self, access: str, login: str, password: str, user: User | None) -> Message:
+        async with await self.sessionManager.createSession() as session:
+            async with session.cursor(cursor_factory=DictCursor) as cursor:
                 if (access != "user"):
-                    if user is None or not self.validate_access(cursor, user, "administrator"):
+                    if user is None or not await self.validate_access(cursor, user, "administrator"):
                         raise HTTPException(
                             status.HTTP_403_FORBIDDEN, "Access denied")
                 try:
-                    user = UserFabric.byData(cursor, access, login, password)
+                    user = await UserFabric.byData(cursor, access, login, password)
                 except Exception:
-                    accessObj = AccessFabric.byName(cursor, access)
+                    accessObj = await AccessFabric.byName(cursor, access)
                     try:
-                        cursor.execute(
+                        await cursor.execute(
                             "insert into users(access_level, login, password) values (%s, %s, %s);", (accessObj.id, login, get_password_hash(password)))
                     except Exception as e:
                         printError("users", e)
                         raise DataBaseError()
 
-                    user = UserFabric.auth(cursor, login, password)
+                    user = await UserFabric.auth(cursor, login, password)
                     if (user is None):
                         raise DataBaseError("failed to add user to db")
-                    self.onAction(cursor, "register", user.id)
+                    await self.onAction(cursor, "register", user.id)
 
                     return StatusMessage(status=Status.Success, message=f"{login} is registred successfully")
 
                 # if user exist raise error
                 raise AlreadyExistError(f"{user.login} is already exist")
 
-    def getRequestsList(self, access_: str, user: User) -> Message:
-        with closing(self.sessionManager.createSession()) as session:
-            with session.cursor(cursor_factory=DictCursor) as cursor:
-                session.autocommit = True
-                if not self.validate_access(cursor, user, access_):
+    async def getRequestsList(self, access_: str, user: User) -> Message:
+        async with await self.sessionManager.createSession() as session:
+            async with session.cursor(cursor_factory=DictCursor) as cursor:
+                if not await self.validate_access(cursor, user, access_):
                     raise HTTPException(
                         status.HTTP_403_FORBIDDEN, "Access denied")
 
                 print("Required request list for access: ", access_)
-                access = AccessFabric.byName(cursor, access_)
-                privileges = PrivilegeFabric.fromAccess(cursor, access)
+                access = await AccessFabric.byName(cursor, access_)
+                privileges = await PrivilegeFabric.fromAccess(cursor, access)
 
                 requests: List[Request] = []
                 with open("./requests.json") as file:
@@ -129,24 +127,24 @@ class RequestProccessor:
                 print("Requests: ", end="")
                 pprint(requests)
 
-                self.onAction(cursor, "get requests list", user.id)
+                await self.onAction(cursor, "get requests list", user.id)
         return Message(type="RequestsList", data=RequestsListMessage(requests=requests))
 
-    def getMarksList(self, user: User) -> Message:
-        with closing(self.sessionManager.createSession()) as session:
-            with session.cursor(cursor_factory=DictCursor) as cursor:
-                session.autocommit = True
-                if not self.validate_access(cursor, user, "user"):
+    async def getMarksList(self, user: User) -> Message:
+        async with await self.sessionManager.createSession() as session:
+            async with session.cursor(cursor_factory=DictCursor) as cursor:
+
+                if not await self.validate_access(cursor, user, "user"):
                     raise HTTPException(
                         status.HTTP_403_FORBIDDEN, "Access denied")
                 try:
-                    cursor.execute("select id from marks;")
-                    ids = cursor.fetchall()
+                    await cursor.execute("select id from marks;")
+                    ids = await cursor.fetchall()
 
-                    cursor.execute(
+                    await cursor.execute(
                         "select column_name from information_schema.columns where table_name=%s", ("marks", ))
                     columns: List[str] = list(
-                        map(lambda x: x[0], cursor.fetchall()))
+                        map(lambda x: x[0], await cursor.fetchall()))
                 except Exception as e:
                     printError("marks, information_schema", e)
                     raise DataBaseError()
@@ -154,33 +152,33 @@ class RequestProccessor:
                 marks = []
                 for item in ids:
                     try:
-                        marks.append(markFabric(cursor, item["id"]))
+                        marks.append(await markFabric(cursor, item["id"]))
                     except Exception as e:
                         print("Warn: can't create mark object with id: ",
                               item["id"], "\nError message: ", e.args)
                         continue
 
                 result = TabledMessage(columns=columns, rows=marks).asMessage()
-                self.onAction(cursor, "get marks list", user.id)
+                await self.onAction(cursor, "get marks list", user.id)
 
                 return result
 
-    def getMarkData(self, mark_id: int, user: User) -> Message:
-        with closing(self.sessionManager.createSession()) as session:
-            with session.cursor(cursor_factory=DictCursor) as cursor:
-                session.autocommit = True
-                if not self.validate_access(cursor, user, "user"):
+    async def getMarkData(self, mark_id: int, user: User) -> Message:
+        async with await self.sessionManager.createSession() as session:
+            async with session.cursor(cursor_factory=DictCursor) as cursor:
+
+                if not await self.validate_access(cursor, user, "user"):
                     raise HTTPException(
                         status.HTTP_403_FORBIDDEN, "Access denied")
                 try:
-                    cursor.execute(
+                    await cursor.execute(
                         "select id from marks where mark_id=%s;", (mark_id,))
-                    ids = cursor.fetchall()
+                    ids = await cursor.fetchall()
 
-                    cursor.execute(
+                    await cursor.execute(
                         "select column_name from information_schema.columns where table_name=%s", ("marks", ))
                     columns: List[str] = list(
-                        map(lambda x: x[0], cursor.fetchall()))
+                        map(lambda x: x[0], await cursor.fetchall()))
                 except Exception as e:
                     printError("marks, information_schema", e)
                     raise DataBaseError()
@@ -188,22 +186,22 @@ class RequestProccessor:
                 marks = []
                 for item in ids:
                     try:
-                        marks.append(markFabric(cursor, item["id"]))
+                        marks.append(await markFabric(cursor, item["id"]))
                     except Exception as e:
                         print("Warn: can't create mark object with id: ",
                               item["id"], "\nError message: ", e.args)
                         continue
 
                 result = TabledMessage(columns=columns, rows=marks).asMessage()
-                self.onAction(
+                await self.onAction(
                     cursor, f"get mark's data with id:{mark_id}", user.id)
 
                 return result
 
-    def changeMarkData(self, mark_id: int, newData: Dict, user: User) -> Message:
-        with closing(self.sessionManager.createSession()) as session:
-            with session.cursor(cursor_factory=DictCursor) as cursor:
-                if not self.validate_access(cursor, user, "redactor"):
+    async def changeMarkData(self, mark_id: int, newData: Dict, user: User) -> Message:
+        async with await self.sessionManager.createSession() as session:
+            async with session.cursor(cursor_factory=DictCursor) as cursor:
+                if not await self.validate_access(cursor, user, "redactor"):
                     raise HTTPException(
                         status.HTTP_403_FORBIDDEN, "Access denied")
                 try:
@@ -214,37 +212,36 @@ class RequestProccessor:
                     )
                     newData['mark_old_id'] = mark_id
                     print("SQL: ", cursor.mogrify(sql, newData))
-                    cursor.execute(sql, newData)
+                    await cursor.execute(sql, newData)
                 except Exception as e:
                     printError("marks", e)
-                    self.onAction(cursor, "change mark data(failed)")
+                    await self.onAction(cursor, "change mark data(failed)")
                     return StatusMessage(status=Status.Failed, message="Bad mark_id or params")
 
                 del newData["mark_old_id"]
                 info = "Changed parameters:  " + \
                     "  ".join(f"{key} to {value}" for key,
                               value in newData.items())
-                self.onAction(cursor, "change mark data", user.id)
-                session.commit()
+                await self.onAction(cursor, "change mark data", user.id)
                 return StatusMessage(status=Status.Success, message=info)
 
-    def addNewMark(self, markData: AddNewMarkRequest, user: User) -> Message:
-        with closing(self.sessionManager.createSession()) as session:
-            with session.cursor(cursor_factory=DictCursor) as cursor:
-                if not self.validate_access(cursor, user, "redactor"):
+    async def addNewMark(self, markData: AddNewMarkRequest, user: User) -> Message:
+        async with await self.sessionManager.createSession() as session:
+            async with session.cursor(cursor_factory=DictCursor) as cursor:
+                if not await self.validate_access(cursor, user, "redactor"):
                     raise HTTPException(
                         status.HTTP_403_FORBIDDEN, "Access denied")
                 try:
                     sql1 = "select * from marks where mark_id = %s;"
-                    cursor.execute(sql1, (markData.mark_id, ))
-                    if (cursor.fetchall() != []):
+                    await cursor.execute(sql1, (markData.mark_id, ))
+                    if (await cursor.fetchall() != []):
                         return StatusMessage(Status.Failed, message="Already exist")
 
                     dump = markData.model_dump()
                     sql2 = SQL("insert into marks(%s) values %s;")
                     print("Sql2: ", cursor.mogrify(
                         sql2, (AsIs(", ".join(dump.keys())), tuple(dump.values()),)))
-                    cursor.execute(
+                    await cursor.execute(
                         sql2, (AsIs(", ".join(dump.keys())), tuple(dump.values()),))
                 except Exception as e:
                     printError("marks", e)
@@ -253,26 +250,25 @@ class RequestProccessor:
                 info = "Parameters:  " + \
                     "  ".join(f"{key} to {value}" for key,
                               value in dump.items())
-                self.onAction(
+                await self.onAction(
                     cursor, f"add mark with id: {markData.mark_id}", user.id)
-                session.commit()
                 return StatusMessage(status=Status.Success, message=info)
 
-    def deleteMark(self, markData: DeleteMarkRequest, user: User) -> Message:
-        with closing(self.sessionManager.createSession()) as session:
-            with session.cursor(cursor_factory=DictCursor) as cursor:
+    async def deleteMark(self, markData: DeleteMarkRequest, user: User) -> Message:
+        async with await self.sessionManager.createSession() as session:
+            async with session.cursor(cursor_factory=DictCursor) as cursor:
                 if not self.validate_access(cursor, user, "redactor"):
                     raise HTTPException(
                         status.HTTP_403_FORBIDDEN, "Access denied")
                 try:
                     sql1 = "select * from marks where mark_id = %s;"
-                    cursor.execute(sql1, (markData.mark_id, ))
-                    if (cursor.fetchall() == []):
+                    await cursor.execute(sql1, (markData.mark_id, ))
+                    if (await cursor.fetchall() == []):
                         return StatusMessage(Status.Failed, message="Not found")
 
                     sql2 = SQL("delete from marks where mark_id=%s;")
                     print("Sql2: ", cursor.mogrify(sql2, (markData.mark_id, )))
-                    cursor.execute(sql2, (markData.mark_id, ))
+                    await cursor.execute(sql2, (markData.mark_id, ))
                 except Exception as e:
                     printError("marks", e)
                     raise DataBaseError()
@@ -280,122 +276,120 @@ class RequestProccessor:
                 info = "Marks with:  " + \
                     "  ".join(f"{key} to {value}" for key, value in markData.model_dump(
                     ).items()) + " successfully deleted"
-                self.onAction(
+                await self.onAction(
                     cursor, f"delete mark with id: {markData.mark_id}", user.id)
-                session.commit()
                 return StatusMessage(status=Status.Success, message=info)
 
-    def getUsersInfo(self, user: User) -> Message:
-        with closing(self.sessionManager.createSession()) as session:
-            with session.cursor(cursor_factory=DictCursor) as cursor:
-                session.autocommit = True
-                if not self.validate_access(cursor, user, "administrator"):
+    async def getUsersInfo(self, user: User) -> Message:
+        async with await self.sessionManager.createSession() as session:
+            async with session.cursor(cursor_factory=DictCursor) as cursor:
+
+                if not await self.validate_access(cursor, user, "administrator"):
                     raise HTTPException(
                         status.HTTP_403_FORBIDDEN, "Access denied")
 
-                users: List = UserFabric.allUsers(cursor)
+                users: List = await UserFabric.allUsers(cursor)
                 if (users == []):
                     return StatusMessage(status=Status.Failed, message="No one user is found")
 
                 columns = list(users[0].model_dump().keys())
-                self.onAction(cursor, f"get all users info", user.id)
+                await self.onAction(cursor, f"get all users info", user.id)
                 return TabledMessage(columns=columns, rows=users).asMessage()
 
-    def getUserInfo(self, user_id: int, user: User) -> Message:
-        with closing(self.sessionManager.createSession()) as session:
-            with session.cursor(cursor_factory=DictCursor) as cursor:
-                session.autocommit = True
-                if not self.validate_access(cursor, user, "administrator"):
+    async def getUserInfo(self, user_id: int, user: User) -> Message:
+        async with await self.sessionManager.createSession() as session:
+            async with session.cursor(cursor_factory=DictCursor) as cursor:
+
+                if not await self.validate_access(cursor, user, "administrator"):
                     raise HTTPException(
                         status.HTTP_403_FORBIDDEN, "Access denied")
                 try:
-                    user = UserFabric.byId(cursor, user_id)
+                    user = await UserFabric.byId(cursor, user_id)
                 except Exception:
                     return StatusMessage(status=Status.Failed, message="No one user is found")
 
                 columns = list(user.model_dump().keys())
-                self.onAction(cursor, f"get user info", user.id)
+                await self.onAction(cursor, f"get user info", user.id)
                 return TabledMessage(columns=columns, rows=[user]).asMessage()
 
-    def deleteUser(self, user_id: int, user: User) -> Message:
-        with closing(self.sessionManager.createSession()) as session:
-            with session.cursor(cursor_factory=DictCursor) as cursor:
-                if not self.validate_access(cursor, user, "administrator"):
+    async def deleteUser(self, user_id: int, user: User) -> Message:
+        async with await self.sessionManager.createSession() as session:
+            async with session.cursor(cursor_factory=DictCursor) as cursor:
+                if not await self.validate_access(cursor, user, "administrator"):
                     raise HTTPException(
                         status.HTTP_403_FORBIDDEN, "Access denied")
                 try:
-                    UserFabric.byId(cursor, user_id)
+                    await UserFabric.byId(cursor, user_id)
                 except Exception:
                     return StatusMessage(status=Status.Failed, message="No one user is found")
 
                 try:
-                    cursor.execute(
+                    await cursor.execute(
                         "delete from users where id=%s", (user_id, ))
                 except Exception as e:
                     printError("marks", e)
-                self.onAction(
+                await self.onAction(
                     cursor, f"delete user with id: {user_id}", user.id)
-                session.commit()
                 return StatusMessage(status=Status.Success, message=f"User with id: {user_id} deleted")
 
-    def getUsersActions(self, user: User):
-        with closing(self.sessionManager.createSession()) as session:
-            with session.cursor(cursor_factory=DictCursor) as cursor:
-                session.autocommit = True
-                if not self.validate_access(cursor, user, "administrator"):
+    async def getUsersActions(self, user: User):
+        async with await self.sessionManager.createSession() as session:
+            async with session.cursor(cursor_factory=DictCursor) as cursor:
+
+                if not await self.validate_access(cursor, user, "administrator"):
                     raise HTTPException(
                         status.HTTP_403_FORBIDDEN, "Access denied")
                 try:
-                    actions: List = UserActionsFabric.allActions(cursor)
+                    actions: List = await UserActionsFabric.allActions(cursor)
                 except Exception as e:
                     return StatusMessage(status=Status.Failed, message=e.args[0])
 
                 columns = list(actions[0].model_dump().keys())
-                self.onAction(cursor, f"get all users actions", user.id)
+                await self.onAction(cursor, f"get all users actions", user.id)
                 return TabledMessage(columns=columns, rows=actions).asMessage()
 
-    def getUserActions(self, user_id: int, user: User):
-        with closing(self.sessionManager.createSession()) as session:
-            with session.cursor(cursor_factory=DictCursor) as cursor:
-                session.autocommit = True
-                if not self.validate_access(cursor, user, "administrator"):
+    async def getUserActions(self, user_id: int, user: User):
+        async with await self.sessionManager.createSession() as session:
+            async with session.cursor(cursor_factory=DictCursor) as cursor:
+
+                if not await self.validate_access(cursor, user, "administrator"):
                     raise HTTPException(
                         status.HTTP_403_FORBIDDEN, "Access denied")
                 try:
-                    actions: List = UserActionsFabric.byId(cursor, user_id)
+                    actions: List = await UserActionsFabric.byId(cursor, user_id)
                 except Exception:
                     return StatusMessage(status=Status.Failed, message="No such user_id found")
 
                 columns = list(actions[0].model_dump().keys())
-                self.onAction(
+                await self.onAction(
                     cursor, f"get user with id: {user_id} actions", user.id)
                 return TabledMessage(columns=columns, rows=actions).asMessage()
 
-    def addUser(self, access, login, password, user: User):
-        with closing(self.sessionManager.createSession()) as session:
-            with session.cursor(cursor_factory=DictCursor) as cursor:
-                session.autocommit = True
-                if not self.validate_access(cursor, user, "administrator"):
+    async def addUser(self, access, login, password, user: User):
+        async with await self.sessionManager.createSession() as session:
+            async with session.cursor(cursor_factory=DictCursor) as cursor:
+
+                if not await self.validate_access(cursor, user, "administrator"):
                     raise HTTPException(
                         status.HTTP_403_FORBIDDEN, "Access denied")
                 try:
-                    self.onAction(
+                    await self.onAction(
                         cursor, f"Add user with access {access}, login: {login}", user.id)
                 except Exception as e:
                     print("Add user error: ", e.args)
                     raise e
 
-        return self.register(access, login, password, user)
+        return await self.register(access, login, password, user)
 
-    def createDBDump(self, data: DumpDBRequest, user: User):
-        with closing(self.sessionManager.createSession()) as session:
-            with session.cursor(cursor_factory=DictCursor) as cursor:
-                session.autocommit = True
-                if not self.validate_access(cursor, user, "administrator"):
+    async def createDBDump(self, data: DumpDBRequest, user: User):
+        async with await self.sessionManager.createSession() as session:
+            async with session.cursor(cursor_factory=DictCursor) as cursor:
+
+                if not await self.validate_access(cursor, user, "administrator"):
                     raise HTTPException(
                         status.HTTP_403_FORBIDDEN, "Access denied")
                 try:
-                    self.onAction(
+                    await self.onAction(
                         cursor, f"dump database by {user.login}", user.id)
                     default_backuper.dump(data.suffix)
                     return StatusMessage(status=Status.Success, message="dump has created")
@@ -403,15 +397,15 @@ class RequestProccessor:
                     print("ERROR: Dump db:", e.args)
                     return StatusMessage(status=Status.Failed, message="dump has not created")
 
-    def getDBDumps(self, user: User):
-        with closing(self.sessionManager.createSession()) as session:
-            with session.cursor(cursor_factory=DictCursor) as cursor:
-                session.autocommit = True
-                if not self.validate_access(cursor, user, "administrator"):
+    async def getDBDumps(self, user: User):
+        async with await self.sessionManager.createSession() as session:
+            async with session.cursor(cursor_factory=DictCursor) as cursor:
+
+                if not await self.validate_access(cursor, user, "administrator"):
                     raise HTTPException(
                         status.HTTP_403_FORBIDDEN, "Access denied")
                 try:
-                    self.onAction(
+                    await self.onAction(
                         cursor, f"get db dumps list by {user.login}", user.id)
                     dumps = default_backuper.get_dumps()
                     return DumpsListMessage(dumps=dumps).asMessage()
@@ -419,25 +413,25 @@ class RequestProccessor:
                     print("ERROR: get db dumps:", e.args)
                     raise e
 
-    def restoreDBDums(self, data: RestoreDumpRequest, user: User):
-        with closing(self.sessionManager.createSession()) as session:
-            with session.cursor(cursor_factory=DictCursor) as cursor:
-                session.autocommit = True
-                if not self.validate_access(cursor, user, "administrator"):
+    async def restoreDBDums(self, data: RestoreDumpRequest, user: User):
+        async with await self.sessionManager.createSession() as session:
+            async with session.cursor(cursor_factory=DictCursor) as cursor:
+
+                if not await self.validate_access(cursor, user, "administrator"):
                     raise HTTPException(
                         status.HTTP_403_FORBIDDEN, "Access denied")
                 try:
-                    self.onAction(
+                    await self.onAction(
                         cursor, f"dump database with id {data.dump_id} by {user.login}", user.id)
                     dumps = default_backuper.get_dumps()
                     if data.dump_id in range(len(dumps)):
                         default_backuper.load(dumps[data.dump_id])
-                        self.onAction(
+                        await self.onAction(
                             cursor, f"dump database with id {data.dump_id} by {user.login}", user.id)
                         return StatusMessage(status=Status.Success, message=f"dump: {dumps[data.dump_id]} has restored")
                     else:
-                        self.onAction(
-                                cursor, f"Failed[incorrect dump_id]: dump database not created", user.id)
+                        await self.onAction(
+                            cursor, f"Failed[incorrect dump_id]: dump database not created", user.id)
                         return StatusMessage(status=Status.Failed, message=f"Incorrect dump_id")
                 except Exception as e:
                     print("ERROR: restore db dump:", e.args)
